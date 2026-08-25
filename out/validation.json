@@ -1,0 +1,115 @@
+{
+  "shifts": 6,
+  "detection": {
+    "recall": 1.0,
+    "precision": 0.757,
+    "alerts_per_shift": 8.7,
+    "transient_false_alarms_total": 0,
+    "median_detect_lag_min": 56.7
+  },
+  "by_kind": {
+    "DEFECT_RISK": {
+      "true": 4,
+      "false": 11,
+      "precision": 0.267,
+      "median_lead_min": 78.7
+    },
+    "BOTTLENECK": {
+      "true": 31,
+      "false": 1,
+      "precision": 0.969,
+      "median_lead_min": 68.0
+    },
+    "DARK_STATION": {
+      "true": 4,
+      "false": 0,
+      "precision": 1.0,
+      "median_lead_min": null
+    }
+  },
+  "forecast": {
+    "twin_mae_units_per_30min": 2.13,
+    "naive_mae_units_per_30min": 2.14,
+    "twin_p90_units_per_30min": 5.01,
+    "twin_mae_during_fault": 2.19,
+    "naive_mae_during_fault": 2.18
+  },
+  "versus_spec_alarm": {
+    "cases": 8,
+    "spec_alarm_never_fired_pct": 50.0,
+    "median_lead_gain_min": 181.8,
+    "median_bodies_protected": 130
+  },
+  "sensor_sweep": [
+    {
+      "scan_miss_rate": 0.0,
+      "cameras": true,
+      "dark_mae_s": 4.63,
+      "dark_mape_pct": 7.15,
+      "bias_s": 0.61
+    },
+    {
+      "scan_miss_rate": 0.0,
+      "cameras": false,
+      "dark_mae_s": 4.52,
+      "dark_mape_pct": 7.01,
+      "bias_s": 1.07
+    },
+    {
+      "scan_miss_rate": 0.05,
+      "cameras": true,
+      "dark_mae_s": 4.64,
+      "dark_mape_pct": 7.16,
+      "bias_s": 0.54
+    },
+    {
+      "scan_miss_rate": 0.05,
+      "cameras": false,
+      "dark_mae_s": 4.55,
+      "dark_mape_pct": 7.07,
+      "bias_s": 1.09
+    },
+    {
+      "scan_miss_rate": 0.15,
+      "cameras": true,
+      "dark_mae_s": 4.67,
+      "dark_mape_pct": 7.18,
+      "bias_s": 0.36
+    },
+    {
+      "scan_miss_rate": 0.15,
+      "cameras": false,
+      "dark_mae_s": 4.63,
+      "dark_mape_pct": 7.2,
+      "bias_s": 1.15
+    },
+    {
+      "scan_miss_rate": 0.3,
+      "cameras": true,
+      "dark_mae_s": 4.74,
+      "dark_mape_pct": 7.26,
+      "bias_s": 0.11
+    },
+    {
+      "scan_miss_rate": 0.3,
+      "cameras": false,
+      "dark_mae_s": 4.78,
+      "dark_mape_pct": 7.43,
+      "bias_s": 1.2
+    },
+    {
+      "scan_miss_rate": 0.5,
+      "cameras": true,
+      "dark_mae_s": 4.91,
+      "dark_mape_pct": 7.49,
+      "bias_s": -0.25
+    },
+    {
+      "scan_miss_rate": 0.5,
+      "cameras": false,
+      "dark_mae_s": 4.99,
+      "dark_mape_pct": 7.77,
+      "bias_s": 1.41
+    }
+  ]
+}
