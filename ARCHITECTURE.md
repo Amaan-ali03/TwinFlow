@@ -27,24 +27,30 @@ fault windows derived from simulator faults — both outside the runtime layer p
 
 ## C4 — System Context
 
-```
-                         ┌───────────────────────┐
-                         │   Floor Supervisor      │  real-time andon-style view,
-                         │   (Person)               │  acknowledges alerts, acts
-                         └───────────┬───────────┘
-                                     │ alerts, recommended action
-                                     ▼
-   MES / SCADA  ──┐          ┌─────────────┐          ┌────────────────────┐
-   Station PLCs ──┼─────────▶│  TwinFlow    │─────────▶│  Plant Manager      │
-   Retrofit cams ─┤          │ (Software     │ trends,  │  (Person)           │
-   Quality mgmt ──┘          │  System)      │ ledger   └────────────────────┘
-                              └──────┬───────┘
-                                     │ business case, ROI
-                                     ▼
-                         ┌───────────────────────┐
-                         │   Leadership             │
-                         │   (Person)               │
-                         └───────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Inputs ["Plant systems — read only"]
+        MES["MES / SCADA"]
+        PLC["Station PLCs"]
+        CAM["Retrofit cameras"]
+        QMS["Quality management"]
+    end
+
+    TF(("TwinFlow<br/>Software System"))
+
+    Sup["Floor Supervisor (Person)<br/><i>real-time andon-style view</i>"]
+    Mgr["Plant Manager (Person)<br/><i>reviews trends</i>"]
+    Lead["Leadership (Person)<br/><i>reviews business case</i>"]
+
+    MES --> TF
+    PLC --> TF
+    CAM --> TF
+    QMS --> TF
+
+    TF -->|alerts, recommended action| Sup
+    Sup -->|acknowledge / act| TF
+    TF -->|trends, ledger| Mgr
+    TF -->|business case, ROI| Lead
 ```
 
 TwinFlow has **no outbound edge to a PLC or line control system.** Every arrow into the plant is
@@ -52,38 +58,27 @@ read-only. The only actuation in this diagram is a human being handed a recommen
 
 ## C4 — Container view, the five layers
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│  TwinFlow                                                                     │
-│                                                                                 │
-│  ┌────────────┐                ┌───────────────┐  cycles, buffers ┌───────────┐│
-│  │ L1 Line    │                │ L2 Virtual     │────────────────▶│ L3 Propag.││
-│  │ topology   │                │ sensors        │                  │ engine    ││
-│  │            │                │                │──confidence─────▶│           ││
-│  │ line.py    │                │ virtual_       │                  │ propagate ││
-│  └────────────┘                │ sensors.py     │                  └─────┬─────┘│
-│                                  └───────┬───────┘                        │     │
-│           plant event feed               │ process params          forecast│     │
-│          ┌──────────────────┐            ▼                              │     │
-│          │  MES / PLC /     │    ┌───────────────┐                      │     │
-│          │  scans, motion   │───▶│ L4 Drift +     │◀─────────────────────┘     │
-│          │  quality, params │    │ genealogy      │                             │
-│          └──────────────────┘    │                │                             │
-│                                  │ drift.py       │───────┐                     │
-│                                  │ genealogy.py   │        │ evidence          │
-│                                  └───────────────┘        ▼                    │
-│                                              ┌───────────────────────┐         │
-│                                              │ L5 Decision + trust    │         │
-│                                              │                        │         │
-│                                              │ decision.py, twin.py   │         │
-│                                              │  - risk_score()        │         │
-│                                              │  - AlertLedger         │         │
-│                                              │  - self-grading        │         │
-│                                              └───────────┬───────────┘         │
-└──────────────────────────────────────────────────────────┼─────────────────────┘
-                                                             ▼
-                                              alerts, evidence, action, owner
-                                              (dashboard: floor / manager / leadership)
+```mermaid
+flowchart TB
+    feed["Plant event feed<br/>MES / PLC / scans / motion / quality / params"]
+
+    subgraph TwinFlow
+        L1["L1 — Line topology<br/><i>line.py</i>"]
+        L2["L2 — Virtual sensors<br/><i>virtual_sensors.py</i>"]
+        L3["L3 — Propagation engine<br/><i>propagate.py</i>"]
+        L4["L4 — Drift + genealogy<br/><i>drift.py, genealogy.py</i>"]
+        L5["L5 — Decision + trust<br/><i>decision.py, twin.py</i>"]
+    end
+
+    out["alerts, evidence, action, owner<br/>(dashboard: floor / manager / leadership)"]
+
+    feed --> L2
+    L1 -.station tiers, capacities.-> L2
+    L2 -->|cycles, buffers, confidence| L3
+    L2 -->|process params| L4
+    L3 -->|forecast| L5
+    L4 -->|evidence| L5
+    L5 --> out
 ```
 
 L4b (`defect_model.py`) is not drawn as a box in its own right because it does not sit on the live
