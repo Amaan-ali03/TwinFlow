@@ -22,8 +22,15 @@ import { FloorLiveLine } from "./components/floor/pages/LiveLine";
 import { FloorAlerts } from "./components/floor/pages/Alerts";
 import { FloorBottlenecks } from "./components/floor/pages/Bottlenecks";
 import { FloorStationDetail } from "./components/floor/pages/StationDetail";
+import { ManagerDataProvider } from "./components/manager/ManagerContext";
+import { ManagerOverview } from "./components/manager/pages/Overview";
+import { ManagerLivePerformance } from "./components/manager/pages/LivePerformance";
+import { ManagerAlerts } from "./components/manager/pages/Alerts";
+import { ManagerBottlenecks } from "./components/manager/pages/Bottlenecks";
+import { ManagerQuality } from "./components/manager/pages/Quality";
+import { ManagerDiagnostics } from "./components/manager/pages/Diagnostics";
+import { ManagerShiftHistory } from "./components/manager/pages/ShiftHistory";
 import { LeadershipView } from "./components/leadership/LeadershipView";
-import { ManagerView } from "./components/manager/ManagerView";
 import {
   loadTwinData,
   loadValidationData,
@@ -193,11 +200,6 @@ function RoleLayout({
  * Role screens — one focused view per navigation item.
  * ------------------------------------------------------------------------- */
 
-function ManagerScreen() {
-  const { twin } = useDashboardData();
-  return <ManagerView twin={twin} />;
-}
-
 function LeadershipScreen() {
   const { twin } = useDashboardData();
   const { validation, validationProgress, validationError } = useValidationData();
@@ -262,15 +264,19 @@ const routeTree = rootRoute.addChildren([
     },
     { wrap: FloorPlaybackProvider }
   ),
-  roleRoutes("manager", {
-    overview: ManagerScreen,
-    "live-performance": ManagerScreen,
-    alerts: ManagerScreen,
-    bottlenecks: ManagerScreen,
-    quality: ManagerScreen,
-    diagnostics: ManagerScreen,
-    history: ManagerScreen,
-  }),
+  roleRoutes(
+    "manager",
+    {
+      overview: ManagerOverview,
+      "live-performance": ManagerLivePerformance,
+      alerts: ManagerAlerts,
+      bottlenecks: ManagerBottlenecks,
+      quality: ManagerQuality,
+      diagnostics: ManagerDiagnostics,
+      history: ManagerShiftHistory,
+    },
+    { wrap: ManagerDataProvider }
+  ),
   roleRoutes("leadership", {
     overview: LeadershipScreen,
     "model-performance": LeadershipScreen,
