@@ -16,7 +16,12 @@ import {
 import { LoginPage } from "./components/LoginPage";
 import { AppShell } from "./components/shell/AppShell";
 import type { RoleId } from "./components/shell/nav";
-import { FloorView } from "./components/floor/FloorView";
+import { FloorPlaybackProvider } from "./components/floor/FloorContext";
+import { FloorOverview } from "./components/floor/pages/Overview";
+import { FloorLiveLine } from "./components/floor/pages/LiveLine";
+import { FloorAlerts } from "./components/floor/pages/Alerts";
+import { FloorBottlenecks } from "./components/floor/pages/Bottlenecks";
+import { FloorStationDetail } from "./components/floor/pages/StationDetail";
 import { LeadershipView } from "./components/leadership/LeadershipView";
 import { ManagerView } from "./components/manager/ManagerView";
 import {
@@ -114,7 +119,13 @@ export function useValidationData() {
  * Role layout — application shell + role-scoped data provider around <Outlet/>.
  * ------------------------------------------------------------------------- */
 
-function RoleLayout({ role }: { role: RoleId }) {
+function RoleLayout({
+  role,
+  outletWrapper: Wrap,
+}: {
+  role: RoleId;
+  outletWrapper?: (props: { children: ReactNode }) => ReactNode;
+}) {
   const { user, logout } = rootRoute.useRouteContext();
   const [twin, setTwin] = useState<TwinData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +176,13 @@ function RoleLayout({ role }: { role: RoleId }) {
           user={{ displayName: user.displayName }}
           onLogout={logout}
         >
-          <Outlet />
+          {Wrap ? (
+            <Wrap>
+              <Outlet />
+            </Wrap>
+          ) : (
+            <Outlet />
+          )}
         </AppShell>
       </ValidationDataContext.Provider>
     </DashboardDataContext.Provider>
@@ -173,15 +190,8 @@ function RoleLayout({ role }: { role: RoleId }) {
 }
 
 /* ---------------------------------------------------------------------------
- * Role screens. Foundation phase: every sub-route of a role renders that
- * role's existing view. Per-tab content restructuring lands in the next
- * phases — the routes and navigation exist now so the shell is reviewable.
+ * Role screens — one focused view per navigation item.
  * ------------------------------------------------------------------------- */
-
-function FloorScreen() {
-  const { twin } = useDashboardData();
-  return <FloorView twin={twin} />;
-}
 
 function ManagerScreen() {
   const { twin } = useDashboardData();
@@ -201,52 +211,28 @@ function LeadershipScreen() {
   );
 }
 
-const FLOOR_PATHS = [
-  "overview",
-  "live-line",
-  "alerts",
-  "bottlenecks",
-  "station",
-] as const;
-const MANAGER_PATHS = [
-  "overview",
-  "live-performance",
-  "alerts",
-  "bottlenecks",
-  "quality",
-  "diagnostics",
-  "history",
-] as const;
-const LEADERSHIP_PATHS = [
-  "overview",
-  "model-performance",
-  "reliability",
-  "root-cause",
-  "business-case",
-  "risks",
-] as const;
-
-/** Build a role's route subtree: a layout route with an index redirect plus one
- *  child route per navigation path, all rendering `screen` for now. Per-tab
- *  content restructuring lands in the next phases. */
-function roleRoutes<const P extends readonly string[]>(
+/** Build a role's route subtree: a layout route (optionally wrapping the outlet
+ *  in a provider) plus one child route per navigation path. The first key is
+ *  the default view the bare `/{role}` path redirects to. */
+function roleRoutes(
   role: RoleId,
-  paths: P,
-  screen: () => ReactNode
+  pages: Record<string, () => ReactNode>,
+  opts: { wrap?: (props: { children: ReactNode }) => ReactNode } = {}
 ) {
+  const paths = Object.keys(pages);
   const layout = createRoute({
     getParentRoute: () => rootRoute,
     path: `/${role}`,
     beforeLoad: requireRole(role),
-    component: () => <RoleLayout role={role} />,
+    component: () => <RoleLayout role={role} outletWrapper={opts.wrap} />,
   });
 
   const index = createRoute({
     getParentRoute: () => layout,
     path: "/",
     beforeLoad: () => {
-      // Routes assembled in this helper resolve at runtime but don't surface in
-      // the router's static path union, so the target is cast here.
+      // Runtime-assembled child paths don't surface in the router's static path
+      // union even though they resolve fine, so the target is cast here.
       throw redirect({ to: `/${role}/${paths[0]}` as unknown as "/floor" });
     },
   });
@@ -255,7 +241,7 @@ function roleRoutes<const P extends readonly string[]>(
     createRoute({
       getParentRoute: () => layout,
       path: p,
-      component: screen,
+      component: pages[p],
     })
   );
 
@@ -265,9 +251,34 @@ function roleRoutes<const P extends readonly string[]>(
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
-  roleRoutes("floor", FLOOR_PATHS, FloorScreen),
-  roleRoutes("manager", MANAGER_PATHS, ManagerScreen),
-  roleRoutes("leadership", LEADERSHIP_PATHS, LeadershipScreen),
+  roleRoutes(
+    "floor",
+    {
+      overview: FloorOverview,
+      "live-line": FloorLiveLine,
+      alerts: FloorAlerts,
+      bottlenecks: FloorBottlenecks,
+      station: FloorStationDetail,
+    },
+    { wrap: FloorPlaybackProvider }
+  ),
+  roleRoutes("manager", {
+    overview: ManagerScreen,
+    "live-performance": ManagerScreen,
+    alerts: ManagerScreen,
+    bottlenecks: ManagerScreen,
+    quality: ManagerScreen,
+    diagnostics: ManagerScreen,
+    history: ManagerScreen,
+  }),
+  roleRoutes("leadership", {
+    overview: LeadershipScreen,
+    "model-performance": LeadershipScreen,
+    reliability: LeadershipScreen,
+    "root-cause": LeadershipScreen,
+    "business-case": LeadershipScreen,
+    risks: LeadershipScreen,
+  }),
 ]);
 
 export const router = createRouter({
