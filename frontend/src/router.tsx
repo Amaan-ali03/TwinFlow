@@ -30,7 +30,13 @@ import { ManagerBottlenecks } from "./components/manager/pages/Bottlenecks";
 import { ManagerQuality } from "./components/manager/pages/Quality";
 import { ManagerDiagnostics } from "./components/manager/pages/Diagnostics";
 import { ManagerShiftHistory } from "./components/manager/pages/ShiftHistory";
-import { LeadershipView } from "./components/leadership/LeadershipView";
+import { ValidationGate } from "./components/leadership/ValidationGate";
+import { LeadershipExecutiveOverview } from "./components/leadership/pages/ExecutiveOverview";
+import { LeadershipModelPerformance } from "./components/leadership/pages/ModelPerformance";
+import { LeadershipReliability } from "./components/leadership/pages/Reliability";
+import { LeadershipRootCause } from "./components/leadership/pages/RootCause";
+import { LeadershipBusinessCase } from "./components/leadership/pages/BusinessCase";
+import { LeadershipRisks } from "./components/leadership/pages/Risks";
 import {
   loadTwinData,
   loadValidationData,
@@ -196,23 +202,6 @@ function RoleLayout({
   );
 }
 
-/* ---------------------------------------------------------------------------
- * Role screens — one focused view per navigation item.
- * ------------------------------------------------------------------------- */
-
-function LeadershipScreen() {
-  const { twin } = useDashboardData();
-  const { validation, validationProgress, validationError } = useValidationData();
-  if (validationError) return <div className="error">{validationError}</div>;
-  return (
-    <LeadershipView
-      twin={twin}
-      validation={validation}
-      validationProgress={validationProgress}
-    />
-  );
-}
-
 /** Build a role's route subtree: a layout route (optionally wrapping the outlet
  *  in a provider) plus one child route per navigation path. The first key is
  *  the default view the bare `/{role}` path redirects to. */
@@ -277,14 +266,18 @@ const routeTree = rootRoute.addChildren([
     },
     { wrap: ManagerDataProvider }
   ),
-  roleRoutes("leadership", {
-    overview: LeadershipScreen,
-    "model-performance": LeadershipScreen,
-    reliability: LeadershipScreen,
-    "root-cause": LeadershipScreen,
-    "business-case": LeadershipScreen,
-    risks: LeadershipScreen,
-  }),
+  roleRoutes(
+    "leadership",
+    {
+      overview: LeadershipExecutiveOverview,
+      "model-performance": LeadershipModelPerformance,
+      reliability: LeadershipReliability,
+      "root-cause": LeadershipRootCause,
+      "business-case": LeadershipBusinessCase,
+      risks: LeadershipRisks,
+    },
+    { wrap: ValidationGate }
+  ),
 ]);
 
 export const router = createRouter({

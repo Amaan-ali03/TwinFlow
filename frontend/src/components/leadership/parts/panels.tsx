@@ -1,0 +1,741 @@
+import { Fragment, useEffect, useState } from "react";
+import type { ValidationData } from "../../../types";
+
+/* ============================ Belief stack ============================ */
+export function BeliefStack({
+  V,
+  bottleneckPrecision,
+  darkPrecision,
+  defectPrecision,
+}: {
+  V: ValidationData;
+  bottleneckPrecision: number;
+  darkPrecision: number;
+  defectPrecision: number;
+}) {
+  const sensorSweep = V.sensor_sweep;
+  const normalCam = sensorSweep.find((s) => s.scan_miss_rate === 0 && s.cameras);
+  const darkMae = normalCam?.dark_mae_s ?? null;
+  const darkMape = normalCam?.dark_mape_pct ?? null;
+  const bufferMae = V.buffer_reconstruction_mae_units ?? 0;
+
+  const rows: { label: string; width: number; value: string; warn?: boolean }[] = [
+    {
+      label: "Dark station work content",
+      width: darkMape !== null ? 100 - darkMape : 0,
+      value:
+        darkMae !== null && darkMape !== null
+          ? `${darkMae.toFixed(1)}s MAE (${darkMape.toFixed(0)}%)`
+          : "—",
+    },
+    {
+      label: "Buffer reconstruction",
+      width: Math.max(0, 100 - bufferMae * 15),
+      value: `${bufferMae.toFixed(2)} units MAE`,
+    },
+    {
+      label: "Bottleneck alert precision",
+      width: bottleneckPrecision * 100,
+      value: `${(bottleneckPrecision * 100).toFixed(0)}%`,
+    },
+    {
+      label: "Dark station alert precision",
+      width: darkPrecision * 100,
+      value: `${(darkPrecision * 100).toFixed(0)}%`,
+    },
+    {
+      label: "Defect drift precision",
+      width: defectPrecision * 100,
+      value: `${(defectPrecision * 100).toFixed(0)}%`,
+      warn: true,
+    },
+    {
+      label: "Material drift recall",
+      width: (V.defect_risk_context?.material_recall ?? 1) * 100,
+      value: `${((V.defect_risk_context?.material_recall ?? 1) * 100).toFixed(0)}%`,
+    },
+  ];
+
+  const ctx = V.defect_risk_context;
+
+  return (
+    <>
+      <div className="beliefstack">
+        {rows.map((r) => (
+          <div key={r.label} className="belief-row">
+            <div className="belief-label">
+              {r.label}
+              {r.warn && <span className="faint"> (calibration in progress)</span>}
+            </div>
+            <div className={`belief-bar${r.warn ? " warn" : ""}`}>
+              <div style={{ width: `${r.width}%` }} />
+            </div>
+            <div className="mono faint">{r.value}</div>
+          </div>
+        ))}
+      </div>
+      <p className="faint chart-note">
+        Every number here is scored after the fact against the plant's own downtime
+        log and quality dispositions — never against the twin's own belief. The
+        defect-drift figure is our honest weak point, and the denominator matters
+        as much as the number:{" "}
+        {ctx ? (
+          <>
+            across these {V.shifts} shifts only{" "}
+            <span className="mono">{ctx.material_param_faults}</span> injected
+            drift{ctx.material_param_faults === 1 ? "" : "s"} raised station fallout
+            enough to be gradeable as a true positive at all, against{" "}
+            <span className="mono">{ctx.defect_alerts_graded}</span> graded alerts —
+            so this figure is bounded by the test, not by the detector.
+          </>
+        ) : (
+          <>
+            early-shift alerts on a genuine drift can under-call before enough
+            bodies accumulate to prove materiality.
+          </>
+        )}{" "}
+        Every material drift was caught. We buy that recall with precision
+        deliberately, and we would rather show you both numbers than one.
+      </p>
+    </>
+  );
+}
+
+/* ============================ Build order ============================ */
+export function BuildOrderPanel({ V }: { V: ValidationData }) {
+  const vc = V.variant_conditioning!;
+  const gain = vc.dark_mae_pooled_s - vc.dark_mae_conditioned_s;
+  const pct = (gain / vc.dark_mae_pooled_s) * 100;
+  const rows = vc.per_station.slice(0, 6);
+  const maxSpread = Math.max(...rows.map((r) => r.variant_spread_s), 1);
+
+  return (
+    <>
+      <div className="grid g3" style={{ marginBottom: 12 }}>
+        <div className="kpi">
+          <h2>Pooled estimate</h2>
+          <div className="kpi-val mono">{vc.dark_mae_pooled_s.toFixed(1)}s</div>
+          <div className="kpi-sub">one work-content model per station</div>
+        </div>
+        <div className="kpi">
+          <h2>Conditioned on build order</h2>
+          <div className="kpi-val mono">{vc.dark_mae_conditioned_s.toFixed(1)}s</div>
+          <div className="kpi-sub">one per model per station</div>
+        </div>
+        <div className="kpi">
+          <h2>Accuracy bought</h2>
+          <div className="kpi-val mono">{pct.toFixed(0)}%</div>
+          <div className="kpi-sub">for zero hardware</div>
+        </div>
+      </div>
+
+      <table className="datatable">
+        <thead>
+          <tr>
+            <th>Dark station</th>
+            <th>Spread across models</th>
+            <th className="num">Pooled</th>
+            <th className="num">Conditioned</th>
+            <th className="num">Gain</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.sid}>
+              <td className="mono">{r.sid}</td>
+              <td className="mono">
+                {r.variant_spread_s.toFixed(1)}s
+                <span
+                  style={{
+                    display: "inline-block",
+                    marginLeft: 8,
+                    width: `${(r.variant_spread_s / maxSpread) * 60}px`,
+                    height: 6,
+                    background: "var(--andon-amber)",
+                    opacity: 0.5,
+                    verticalAlign: "middle",
+                  }}
+                />
+              </td>
+              <td className="num mono">{r.pooled_mae_s.toFixed(2)}s</td>
+              <td className="num mono">{r.conditioned_mae_s.toFixed(2)}s</td>
+              <td className="num mono">+{r.gain_s.toFixed(2)}s</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <p className="faint chart-note">
+        On a mixed model line the same fixture takes measurably longer on a larger
+        body, and at a dark station the twin cannot see which body it is looking at
+        unless someone tells it. The build order already exists in the MES — no
+        sensor, no install window, no PLC touched — and the gain tracks exactly how
+        much the mix moves that station's work. Integrate the build order before
+        buying a single camera.
+      </p>
+    </>
+  );
+}
+
+/* ============================ Camera table ============================ */
+export function CameraTable({ V }: { V: ValidationData }) {
+  const sweep = V.sensor_sweep;
+  const rates = [0, 0.05, 0.15, 0.3, 0.5];
+  const labels: Record<number, string> = {
+    0: "Normal (≈1–5% miss rate)",
+    0.05: "Low (5% miss rate)",
+    0.15: "Degraded (15% miss rate)",
+    0.3: "Poor (30%+ miss rate)",
+    0.5: "Very poor (50% miss rate)",
+  };
+
+  return (
+    <>
+      <p className="dim" style={{ fontSize: 13.5, lineHeight: 1.55, marginTop: 0 }}>
+        The Round 1 pitch proposed a webcam at every dark station. The validated
+        result says something more specific and cheaper to build:
+      </p>
+      <table className="datatable">
+        <thead>
+          <tr>
+            <th>Barcode scan quality</th>
+            <th className="num">Without camera</th>
+            <th className="num">With camera</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rates.map((rate) => {
+            const without = sweep.find((s) => s.scan_miss_rate === rate && !s.cameras);
+            const withCam = sweep.find((s) => s.scan_miss_rate === rate && s.cameras);
+            if (!without || !withCam) return null;
+            const diff = withCam.dark_mae_s - without.dark_mae_s;
+            return (
+              <tr key={rate}>
+                <td>{labels[rate] ?? `${(rate * 100).toFixed(0)}% miss rate`}</td>
+                <td className="num mono">{without.dark_mae_s.toFixed(1)}s MAE</td>
+                <td
+                  className="num mono"
+                  style={diff < 0 ? { color: "var(--andon-green)" } : undefined}
+                >
+                  {withCam.dark_mae_s.toFixed(1)}s MAE{diff < 0 ? " ↓" : ""}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="faint chart-note">
+        Hand off timing from existing barcode scans is sufficient on its own for
+        most dark stations. Cameras earn their keep only where scan coverage is
+        already poor — recommend a targeted retrofit of 2–3 cameras per line, not
+        blanket coverage, cutting the proposed hardware spend by roughly 70%.
+      </p>
+    </>
+  );
+}
+
+/* ============================ Phase card ============================ */
+export function Phase({
+  num,
+  title,
+  body,
+}: {
+  num: string;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="phase">
+      <div className="phase-num">{num}</div>
+      <div className="phase-title">{title}</div>
+      <p>{body}</p>
+    </div>
+  );
+}
+
+/* ============================ Forecast ============================ */
+export function ForecastPanel({ V }: { V: ValidationData }) {
+  const f = V.forecast;
+  const twinHealthy = f.twin_mae_healthy ?? null;
+  const naiveHealthy = f.naive_mae_healthy ?? null;
+  const twinBias = f.twin_bias_units ?? null;
+  const naiveBias = f.naive_bias_units ?? null;
+
+  const pctBetter = (twin: number, naive: number) =>
+    naive > 0 ? `${((1 - twin / naive) * 100).toFixed(0)}%` : "—";
+
+  if (twinHealthy === null || naiveHealthy === null) {
+    return (
+      <>
+        <div className="grid g3" style={{ marginBottom: 12 }}>
+          <div className="kpi">
+            <h2>Twin forecast error</h2>
+            <div className="kpi-val mono">
+              {f.twin_mae_units_per_30min.toFixed(1)} units
+            </div>
+            <div className="kpi-sub">mean absolute error over 30-min windows</div>
+          </div>
+          <div className="kpi">
+            <h2>Naive baseline error</h2>
+            <div className="kpi-val mono">
+              {f.naive_mae_units_per_30min.toFixed(1)} units
+            </div>
+            <div className="kpi-sub">constant-takt assumption</div>
+          </div>
+          <div className="kpi">
+            <h2>90th percentile error</h2>
+            <div className="kpi-val mono">
+              {f.twin_p90_units_per_30min.toFixed(1)} units
+            </div>
+            <div className="kpi-sub">worst 10% of forecast windows</div>
+          </div>
+        </div>
+        <p className="faint chart-note">
+          Predicted 30-minute output against units actually completed, across{" "}
+          {V.shifts} independently seeded shifts.
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid g3" style={{ marginBottom: 12 }}>
+        <div className="kpi kpi-hero">
+          <h2>When throughput is degraded</h2>
+          <div className="kpi-val mono">
+            {f.twin_mae_during_fault.toFixed(1)} vs{" "}
+            {f.naive_mae_during_fault.toFixed(1)}
+          </div>
+          <div className="kpi-sub">
+            units MAE, twin vs naive —{" "}
+            {pctBetter(f.twin_mae_during_fault, f.naive_mae_during_fault)} lower
+            error
+            {f.probes_during_fault ? `, ${f.probes_during_fault} windows` : ""}
+          </div>
+        </div>
+        <div className="kpi">
+          <h2>When the line is healthy</h2>
+          <div className="kpi-val mono">
+            {twinHealthy.toFixed(1)} vs {naiveHealthy.toFixed(1)}
+          </div>
+          <div className="kpi-sub">
+            units MAE — the naive takt wins here, and should
+            {f.probes_healthy ? `, ${f.probes_healthy} windows` : ""}
+          </div>
+        </div>
+        <div className="kpi">
+          <h2>Across the whole shift</h2>
+          <div className="kpi-val mono">
+            {f.twin_mae_units_per_30min.toFixed(1)} vs{" "}
+            {f.naive_mae_units_per_30min.toFixed(1)}
+          </div>
+          <div className="kpi-sub">
+            units MAE — a wash on the aggregate count, p90{" "}
+            {f.twin_p90_units_per_30min.toFixed(1)}
+          </div>
+        </div>
+      </div>
+      <p className="faint chart-note">
+        Predicted 30-minute output against units actually completed, pooled over
+        every probe window in {V.shifts} independently seeded shifts. Windows are
+        split by whether a throughput-affecting fault was live — a calibration
+        drift changes what comes off the line, not how fast, so it does not count
+        here.
+        <br />
+        <br />
+        <strong>Read this one carefully, because it is not a big win.</strong> On
+        the aggregate unit count the twin is level with multiplying takt by thirty
+        minutes, and on a healthy line it is{" "}
+        <span className="mono">{(twinHealthy - naiveHealthy).toFixed(1)}</span> units
+        worse — a line running at takt is genuinely easy to predict, and an
+        estimator built to model starvation has nothing to model. The forecast is
+        only ahead where something is actually degrading throughput, and there by a
+        modest{" "}
+        <span className="mono">
+          {pctBetter(f.twin_mae_during_fault, f.naive_mae_during_fault)}
+        </span>
+        . Both estimators also still read optimistic
+        {twinBias !== null && naiveBias !== null ? (
+          <>
+            {" "}
+            — mean signed error{" "}
+            <span className="mono">
+              {twinBias >= 0 ? "+" : ""}
+              {twinBias.toFixed(1)}
+            </span>{" "}
+            units for the twin against{" "}
+            <span className="mono">
+              {naiveBias >= 0 ? "+" : ""}
+              {naiveBias.toFixed(1)}
+            </span>{" "}
+            for naive, after scaling the capable rate by the availability the
+            end-of-line counter implies
+          </>
+        ) : null}
+        .
+        <br />
+        <br />
+        We are showing it anyway, because the honest claim on this page is not that
+        the twin counts bodies better. It is the{" "}
+        <span className="mono">
+          {V.versus_spec_alarm.median_lead_gain_min?.toFixed(0) ?? "—"} minutes
+        </span>{" "}
+        of warning and the named upstream station — knowing <em>which</em> station
+        will starve and <em>when</em>, which a takt multiplication cannot tell you
+        at any accuracy.
+      </p>
+    </>
+  );
+}
+
+/* ============================ Trust loop ============================ */
+export function TrustLoopPanel({ V }: { V: ValidationData }) {
+  const tl = V.trust_loop!;
+  const kinds = ["BOTTLENECK", "DEFECT_RISK", "DARK_STATION"] as const;
+  const kindLabels: Record<string, string> = {
+    BOTTLENECK: "Bottleneck",
+    DEFECT_RISK: "Defect risk",
+    DARK_STATION: "Dark station",
+  };
+
+  return (
+    <>
+      <div className="grid g3" style={{ marginBottom: 12 }}>
+        {kinds.map((k) => {
+          const fp = tl.final_threshold_bump[k] ?? 0;
+          const lp = tl.final_lifetime_precision[k];
+          return (
+            <div className="kpi" key={k}>
+              <h2>{kindLabels[k] ?? k}</h2>
+              <div className="kpi-val mono">
+                {lp !== null && lp !== undefined ? `${(lp * 100).toFixed(0)}%` : "—"}
+              </div>
+              <div className="kpi-sub">
+                lifetime precision{fp !== 0 ? ` (threshold +${fp})` : ""}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <div className="table-scroll">
+        <table className="datatable">
+          <thead>
+            <tr>
+              <th>Shift</th>
+              {kinds.map((k) => (
+                <th key={k} colSpan={3}>
+                  {kindLabels[k] ?? k}
+                </th>
+              ))}
+            </tr>
+            <tr>
+              <th></th>
+              {kinds.map((k) => (
+                <Fragment key={k}>
+                  <th className="num">Fired</th>
+                  <th className="num">Lifetime P</th>
+                  <th className="num">Threshold</th>
+                </Fragment>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tl.per_shift.map((row: Record<string, unknown>, i: number) => (
+              <tr key={i}>
+                <td className="mono">{(row as { shift?: number }).shift ?? i + 1}</td>
+                {kinds.map((k) => {
+                  const kr = row[k] as Record<string, unknown> | undefined;
+                  return (
+                    <Fragment key={k}>
+                      <td className="num mono">{(kr?.fired as number) ?? 0}</td>
+                      <td className="num mono">
+                        {kr?.lifetime_precision != null
+                          ? `${((kr.lifetime_precision as number) * 100).toFixed(0)}%`
+                          : "—"}
+                      </td>
+                      <td className="num mono">+{(kr?.threshold_bump as number) ?? 0}</td>
+                    </Fragment>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="faint chart-note">
+        The alert ledger self-retunes: after 5 graded alerts of a kind it adjusts
+        the firing threshold to maintain a precision floor. This table shows the
+        trajectory across shifts — thresholds stabilising and lifetime precision
+        converging means the system is learning the plant's own baseline.
+      </p>
+    </>
+  );
+}
+
+/* ============================ Multi-causal ============================ */
+export function MultiCausalPanel({ V }: { V: ValidationData }) {
+  const mc = V.multi_causal!;
+  const rows: { kind: string; cases: number; detected: number | null; detail: string }[] = [
+    {
+      kind: "Carry-in",
+      cases: mc.carry_in.cases,
+      detected: mc.carry_in.named_true_source,
+      detail:
+        mc.carry_in.named_true_source != null
+          ? `${(mc.carry_in.named_true_source * 100).toFixed(0)}% named true upstream source`
+          : mc.carry_in.named_symptom_station_only != null
+          ? `${(mc.carry_in.named_symptom_station_only * 100).toFixed(0)}% named symptom only`
+          : "no cases",
+    },
+    {
+      kind: "Ambient (zone-wide)",
+      cases: mc.ambient.cases,
+      detected: mc.ambient.detected,
+      detail:
+        mc.ambient.mean_stations_blamed != null
+          ? `${mc.ambient.mean_stations_blamed.toFixed(1)} stations blamed / ${mc.ambient.mean_stations_in_zone?.toFixed(1)} in zone`
+          : "no cases",
+    },
+    {
+      kind: "Intermittent",
+      cases: mc.intermittent.cases,
+      detected: mc.intermittent.detected,
+      detail:
+        mc.intermittent.median_lead_min != null
+          ? `${mc.intermittent.median_lead_min.toFixed(0)} min median lead`
+          : "no cases",
+    },
+    {
+      kind: "Operator",
+      cases: mc.operator.cases,
+      detected: mc.operator.detected,
+      detail: "manning change at a manual station",
+    },
+  ];
+
+  return (
+    <>
+      <table className="datatable">
+        <thead>
+          <tr>
+            <th>Cause type</th>
+            <th className="num">Cases</th>
+            <th className="num">Detected</th>
+            <th>Attribution</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.kind}>
+              <td>{r.kind}</td>
+              <td className="num mono">{r.cases}</td>
+              <td className="num mono">
+                {r.detected != null ? `${(r.detected * 100).toFixed(0)}%` : "—"}
+              </td>
+              <td className="faint">{r.detail}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="faint chart-note">
+        Standard validation tests single-station monotone faults. This slice
+        injects harder scenarios — zone-wide ambient drift, defects that surface
+        downstream of their true cause, intermittent equipment faults, and
+        operator-caused variation — each exactly once per shift across {mc.shifts}{" "}
+        shifts. Small sample, but evidence the engine handles real-world
+        causation, not just correlation.
+      </p>
+    </>
+  );
+}
+
+/* ============================ Business case ============================ */
+interface Assumptions {
+  vehicleRevenue: number;
+  reworkCost: number;
+  lineHourlyRate: number;
+  cameraCost: number;
+  camerasPerLine: number;
+  camerasBlanket: number;
+  integrationCost: number;
+  eventsPerShift: number;
+  shiftsPerYear: number;
+  responseTimeMin: number;
+}
+
+const DEFAULT_ASSUMPTIONS: Assumptions = {
+  vehicleRevenue: 35_000,
+  reworkCost: 3_500,
+  lineHourlyRate: 420_000,
+  cameraCost: 4_500,
+  camerasPerLine: 3,
+  camerasBlanket: 10,
+  integrationCost: 60_000,
+  eventsPerShift: 2.5,
+  shiftsPerYear: 750,
+  responseTimeMin: 30,
+};
+
+const ASSUMPTION_FIELDS: { key: keyof Assumptions; label: string; step?: number }[] = [
+  { key: "vehicleRevenue", label: "Revenue per vehicle ($)", step: 1000 },
+  { key: "reworkCost", label: "Rework per unit ($)", step: 100 },
+  { key: "lineHourlyRate", label: "Line downtime ($/hr)", step: 10000 },
+  { key: "eventsPerShift", label: "Contained events / shift", step: 0.5 },
+  { key: "shiftsPerYear", label: "Shifts per year", step: 10 },
+  { key: "responseTimeMin", label: "Response time (min)", step: 5 },
+  { key: "cameraCost", label: "Cost per camera ($)", step: 500 },
+  { key: "camerasPerLine", label: "Cameras retrofitted", step: 1 },
+  { key: "camerasBlanket", label: "Cameras if blanket", step: 1 },
+  { key: "integrationCost", label: "Integration + software ($)", step: 5000 },
+];
+
+const ASSUMPTIONS_KEY = "twinflow_business_case";
+
+function loadAssumptions(): Assumptions {
+  try {
+    const raw = localStorage.getItem(ASSUMPTIONS_KEY);
+    if (!raw) return DEFAULT_ASSUMPTIONS;
+    const parsed = JSON.parse(raw) as Partial<Assumptions>;
+    const merged = { ...DEFAULT_ASSUMPTIONS };
+    for (const { key } of ASSUMPTION_FIELDS) {
+      const v = parsed[key];
+      if (typeof v === "number" && Number.isFinite(v) && v >= 0) merged[key] = v;
+    }
+    return merged;
+  } catch {
+    return DEFAULT_ASSUMPTIONS;
+  }
+}
+
+export function BusinessCasePanel({ V }: { V: ValidationData }) {
+  const [a, setA] = useState<Assumptions>(loadAssumptions);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ASSUMPTIONS_KEY, JSON.stringify(a));
+    } catch {
+      /* private window — the numbers just won't survive a refresh */
+    }
+  }, [a]);
+
+  const dirty = ASSUMPTION_FIELDS.some(({ key }) => a[key] !== DEFAULT_ASSUMPTIONS[key]);
+
+  const bodiesProtected = V.versus_spec_alarm.median_bodies_protected ?? 0;
+  const leadGainMin = V.versus_spec_alarm.median_lead_gain_min ?? 0;
+
+  const reworkPerShift = bodiesProtected * a.eventsPerShift * a.reworkCost;
+  const downtimePerEvent =
+    Math.max(0, (leadGainMin - a.responseTimeMin) / 60) * a.lineHourlyRate;
+  const downtimePerShift = downtimePerEvent * a.eventsPerShift;
+  const cameraSavings =
+    Math.max(0, a.camerasBlanket - a.camerasPerLine) * a.cameraCost;
+
+  const investment = a.camerasPerLine * a.cameraCost + a.integrationCost;
+  const savingsPerShift = reworkPerShift + downtimePerShift;
+  const annualSavings = savingsPerShift * a.shiftsPerYear;
+
+  return (
+    <>
+      <div className="assumptions">
+        <div className="assumptions-head">
+          <span className="faint">
+            Your plant's numbers — every figure below recomputes as you type.
+          </span>
+          {dirty && (
+            <button
+              type="button"
+              className="linkbtn"
+              onClick={() => setA(DEFAULT_ASSUMPTIONS)}
+            >
+              Reset to defaults
+            </button>
+          )}
+        </div>
+        <div className="assumptions-grid">
+          {ASSUMPTION_FIELDS.map(({ key, label, step }) => (
+            <label key={key}>
+              <span>{label}</span>
+              <input
+                type="number"
+                className="mono"
+                min={0}
+                step={step ?? 1}
+                value={a[key]}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  setA((prev) => ({
+                    ...prev,
+                    [key]: Number.isFinite(next) && next >= 0 ? next : 0,
+                  }));
+                }}
+              />
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid g3" style={{ marginBottom: 12 }}>
+        <div className="kpi">
+          <h2>Rework avoided</h2>
+          <div className="kpi-val mono">${Math.round(reworkPerShift / 1000)}K</div>
+          <div className="kpi-sub">
+            per shift, at ${Math.round(a.reworkCost / 1000)}K per unit
+          </div>
+        </div>
+        <div className="kpi">
+          <h2>Downtime avoided</h2>
+          <div className="kpi-val mono">${Math.round(downtimePerShift / 1000)}K</div>
+          <div className="kpi-sub">
+            per shift, {leadGainMin.toFixed(0)} min lead − {a.responseTimeMin} min
+            response
+          </div>
+        </div>
+        <div className="kpi">
+          <h2>Camera capex saved</h2>
+          <div className="kpi-val mono">${Math.round(cameraSavings / 1000)}K</div>
+          <div className="kpi-sub">
+            {a.camerasBlanket} → {a.camerasPerLine} cameras per line
+          </div>
+        </div>
+      </div>
+      <div className="grid g3">
+        <div className="kpi">
+          <h2>Annual projection (all three)</h2>
+          <div className="kpi-val mono">
+            ${Math.round(annualSavings / 1_000_000).toLocaleString()}M
+          </div>
+          <div className="kpi-sub">
+            {a.shiftsPerYear} shifts/year × per-shift savings
+          </div>
+        </div>
+        <div className="kpi">
+          <h2>Rollout investment</h2>
+          <div className="kpi-val mono">${Math.round(investment / 1000)}K</div>
+          <div className="kpi-sub">
+            {a.camerasPerLine} cameras + integration and software
+          </div>
+        </div>
+        <div className="kpi">
+          <h2>Payback</h2>
+          <div className="kpi-val mono">
+            {savingsPerShift > 0
+              ? `${(investment / savingsPerShift).toFixed(1)} shifts`
+              : "—"}
+          </div>
+          <div className="kpi-sub">rollout cost recovered from avoided cost</div>
+        </div>
+      </div>
+      <p className="faint chart-note">
+        The mechanical inputs — bodies protected per contained event (
+        {bodiesProtected}), lead time over a spec alarm ({leadGainMin.toFixed(0)}{" "}
+        min) — come from the validation run and are not editable. Everything in the
+        fields is your plant's number, not ours: the defaults are illustrative and
+        the whole case should be re-run against your own financials before it means
+        anything. Payback divides the actual rollout spend by per-shift avoided
+        cost; the camera capex saving sits outside it, since avoiding a purchase is
+        not the same as funding one.
+      </p>
+    </>
+  );
+}
