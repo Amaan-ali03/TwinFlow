@@ -54,6 +54,7 @@ class ParamState:
     in_spec_now: bool = True
     streak: int = 0
     slope_se_per_hr: float = 0.0
+    last_z: float = 0.0        # this single reading's z, before any smoothing
 
     def as_dict(self) -> dict:
         return {
@@ -91,10 +92,17 @@ class StationDriftMonitor:
         self._cov_mean: Optional[np.ndarray] = None
         self.t2: float = 0.0
         self.t2_p95: float = 0.0
+        # This body's own reading, not the smoothed EWMA centre — the
+        # instantaneous excursion is what the simulator's defect roll
+        # actually keys off, and the L4b model needs that signal per body,
+        # separate from the persistence-over-time signal EWMA/CUSUM carry.
+        self.last_max_z: float = 0.0
+        self.last_max_z_param: Optional[str] = None
 
     # ------------------------------------------------------------------
     def update(self, t: int, values: Dict[str, float]) -> None:
         keys = list(self.params.keys())
+        this_call_z: Dict[str, float] = {}
         for p in keys:
             if p not in values:
                 continue
@@ -113,6 +121,8 @@ class StationDriftMonitor:
 
             sig = ps.baseline_sigma
             z = (x - ps.baseline_mean) / sig
+            ps.last_z = z
+            this_call_z[p] = z
 
             ps.ewma = (1 - self.LAMBDA) * ps.ewma + self.LAMBDA * x
             # variance of the EWMA statistic in steady state
@@ -147,6 +157,11 @@ class StationDriftMonitor:
             ps.ttl_spec_s = self._time_to_spec(ps)
             ps.state = self._classify(ps)
 
+        if this_call_z:
+            worst_p = max(this_call_z, key=lambda p: abs(this_call_z[p]))
+            self.last_max_z_param = worst_p
+            self.last_max_z = this_call_z[worst_p]
+
         # multivariate view once the baseline is learned
         vals = [values.get(p) for p in keys]
         if all(v is not None for v in vals):
@@ -180,6 +195,11 @@ class StationDriftMonitor:
         four bodies and settles never reaches the count, so it never becomes
         an alert, while a nutrunner that loses calibration keeps the condition
         true for every body after it and does.
+
+        EXCURSION means a single reading went outside the spec window. It is
+        a state observation, not an alert trigger — only DRIFTING (which
+        requires EWMA + CUSUM agreement held for HOLD consecutive bodies)
+        enters drifting_stations() and fires DEFECT_RISK.
         """
         if not ps.in_spec_now:
             ps.streak = self.HOLD
@@ -225,6 +245,32 @@ class DriftBank:
         if m is not None and ev.get("params"):
             m.update(ev["t"], ev["params"])
 
+    def feature_row(self, ev: dict) -> Optional[dict]:
+        """Live drift features for the station in ev, captured the instant
+        this body's reading was folded into the monitor.
+
+        Call this immediately after observe(ev) in the run loop. Nothing
+        later in time can leak into it, because the monitor for this sid has
+        only just been updated with this body's own values and no other
+        body's event can move it before the next one arrives.
+        """
+        m = self.monitors.get(ev["sid"])
+        if m is None or not ev.get("params"):
+            return None
+        w = m.worst()
+        if w is None:
+            return None
+        return {
+            "sid": ev["sid"], "param": w.param,
+            "ewma_z": w.ewma_z, "cusum_z": w.cusum_z, "streak": w.streak,
+            "t2": m.t2, "t2_p95": m.t2_p95,
+            "t2_flag": bool(m.t2_p95 > 0 and m.t2 > m.t2_p95 * 1.8),
+            # This body's own instantaneous reading, not the smoothed
+            # centre — the strongest per-body predictor, since it is what
+            # the simulator's own defect roll is keyed off.
+            "raw_z": m.last_max_z, "raw_z_param": m.last_max_z_param,
+        }
+
     def snapshot(self) -> Dict[str, dict]:
         return {sid: m.snapshot() for sid, m in self.monitors.items()}
 
@@ -232,7 +278,7 @@ class DriftBank:
         out = []
         for sid, m in self.monitors.items():
             snap = m.snapshot()
-            if snap["state"] in (DRIFTING, EXCURSION):
+            if snap["state"] == DRIFTING:
                 out.append(snap)
         return sorted(out, key=lambda s: -abs(
             s["params"][s["worst_param"]]["ewma_z"]))

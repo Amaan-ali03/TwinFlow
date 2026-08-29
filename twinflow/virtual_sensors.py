@@ -44,6 +44,7 @@ class VirtualReading:
     state: str
     buf_up: int
     buf_down: int
+    variant: Optional[str] = None
 
 
 @dataclass
@@ -51,6 +52,12 @@ class _Track:
     last_dep: Optional[int] = None
     ewma: Optional[float] = None
     n: int = 0
+    last_conf: float = 1.0
+    # One EWMA per model built at this station. A dark station running a
+    # mixed sequence has a multi-modal work content distribution, and a
+    # single pooled mean sits between the modes — wrong for every body.
+    by_variant: Dict[str, float] = field(default_factory=dict)
+    n_variant: Dict[str, int] = field(default_factory=dict)
 
 
 class VirtualSensorBank:
@@ -58,8 +65,15 @@ class VirtualSensorBank:
 
     CONF = {DIRECT: 0.99, CLEAN: 0.85, MOTION: 0.62, BOUNDED: 0.35}
     LAMBDA = 0.25
+    # bodies of one model that must have passed a station before its own EWMA
+    # is trusted ahead of the pooled one
+    MIN_VARIANT_N = 4
 
-    def __init__(self, stations: List[Station]):
+    def __init__(self, stations: List[Station], use_variant: bool = True):
+        """use_variant=False pools every model into one estimate, which is
+        what the twin did before the build order was part of the feed. Kept
+        so the validation harness can measure what conditioning is worth."""
+        self.use_variant = use_variant
         self.stations = stations
         self.idx = {s.sid: i for i, s in enumerate(stations)}
         self.caps = [s.out_buffer_cap for s in stations]
@@ -112,6 +126,11 @@ class VirtualSensorBank:
         j = self.idx[sid]
         st = self.stations[j]
         tr = self.tracks[sid]
+        # Which model this body is. MES build-order data, not a sensor — it is
+        # known before the body is launched and is available at a dark station
+        # just as readily as at an instrumented one.
+        variant = ev.get("variant") if self.use_variant else None
+        nominal = st.cycle_for(variant)
 
         buf_up = self.buffer_level(j)
         buf_down = self.out_level(j)
@@ -151,25 +170,31 @@ class VirtualSensorBank:
         if st.tier in (TIER_A, TIER_B) and ev.get("cycle_s") is not None:
             cycle_hat, method = float(ev["cycle_s"]), DIRECT
         elif start is None:
-            cycle_hat, method = float(st.nominal_cycle_s), BOUNDED
+            cycle_hat, method = float(nominal), BOUNDED
         elif not ambiguous:
             cycle_hat = float(max(1.0, ev["t"] - start))
             method = CLEAN
         elif ev.get("motion_duty") is not None:
-            span = max(1.0, (ev["t"] - (start if start else ev["t"] - st.nominal_cycle_s)))
+            span = max(1.0, (ev["t"] - (start if start else ev["t"] - nominal)))
             cycle_hat, method = span * float(ev["motion_duty"]), MOTION
         else:
             # never let a blocked station masquerade as a slow one
-            prior = tr.ewma if tr.ewma is not None else st.nominal_cycle_s
+            prior = self._prior(tr, variant, nominal)
             span = max(1.0, ev["t"] - start)
             cycle_hat, method = float(min(span, prior * 1.05)), BOUNDED
 
         conf = self.CONF[method]
+        tr.last_conf = conf
+        lam = self.LAMBDA * conf
         if tr.ewma is None:
             tr.ewma = cycle_hat
         else:
-            lam = self.LAMBDA * conf
             tr.ewma = (1 - lam) * tr.ewma + lam * cycle_hat
+        if variant is not None:
+            prev = tr.by_variant.get(variant)
+            tr.by_variant[variant] = (cycle_hat if prev is None
+                                      else (1 - lam) * prev + lam * cycle_hat)
+            tr.n_variant[variant] = tr.n_variant.get(variant, 0) + 1
         tr.n += 1
         tr.last_dep = ev["t"]
         self.full_seen[j] = False
@@ -179,11 +204,27 @@ class VirtualSensorBank:
         self.dep_count[j] += 1
 
         r = VirtualReading(t=ev["t"], sid=sid, uid=ev["uid"],
-                           cycle_hat_s=round(float(tr.ewma), 2),
+                           cycle_hat_s=round(self._estimate(tr, variant), 2),
                            confidence=conf, method=method, state=state,
-                           buf_up=buf_up, buf_down=buf_down)
+                           buf_up=buf_up, buf_down=buf_down, variant=variant)
         self.readings.append(r)
         return r
+
+    # ------------------------------------------------------------------
+    def _prior(self, tr: _Track, variant: Optional[str], nominal: float) -> float:
+        """Best available expectation for the body being measured."""
+        if variant is not None and tr.n_variant.get(variant, 0) >= self.MIN_VARIANT_N:
+            return tr.by_variant[variant]
+        return tr.ewma if tr.ewma is not None else nominal
+
+    def _estimate(self, tr: _Track, variant: Optional[str]) -> float:
+        """Work content for this body: its own model's track once that track
+        has seen enough bodies, the pooled track until then. Falling back to
+        the pool rather than to the spec keeps a rare model from reporting a
+        number the station has never actually produced."""
+        if variant is not None and tr.n_variant.get(variant, 0) >= self.MIN_VARIANT_N:
+            return float(tr.by_variant[variant])
+        return float(tr.ewma)
 
     # ------------------------------------------------------------------
     def _refresh_full(self, j: int, t: int) -> None:
@@ -203,13 +244,55 @@ class VirtualSensorBank:
                 self.full_since[k] = None
 
     def current_cycles(self) -> Dict[str, float]:
+        """Pooled work content per station — the mix average, which is the
+        right rate for a forecast over a horizon long enough to build the
+        mix. Per-body estimates are on the readings; this is the planning
+        number. The fallback is the mix-weighted nominal for the same reason:
+        the base variant's cycle time is not what this station averages."""
         return {sid: (tr.ewma if tr.ewma is not None
-                      else self.stations[self.idx[sid]].nominal_cycle_s)
+                      else self.stations[self.idx[sid]].mix_cycle_s)
                 for sid, tr in self.tracks.items()}
 
     def current_buffers(self) -> Dict[str, int]:
         """Out buffer level for every station, keyed by the station that fills it."""
         return {s.sid: self.out_level(i) for i, s in enumerate(self.stations)}
+
+    def current_confidences(self) -> Dict[str, float]:
+        """Most recent confidence per station, from the last observation."""
+        return {sid: tr.last_conf for sid, tr in self.tracks.items()}
+
+    def score_buffers_against_truth(self, events: List[dict],
+                                     snapshots: List[dict]) -> Dict[str, float]:
+        """Validation only. How close are inferred buffer levels to reality.
+
+        Replays events up to each snapshot timestamp, records the inferred
+        buffer level, and compares against the ground truth from the simulator.
+        Returns MAE in units across all non-terminal buffers and all snapshots.
+        """
+        # Build a lookup from snapshot timestamp to ground truth buffer list
+        snap_map = {s["t"]: s["buffers"] for s in snapshots}
+        # Sort events by time for sequential replay
+        sorted_events = sorted(events, key=lambda e: e["t"])
+        # Sort snapshot timestamps
+        snap_times = sorted(snap_map.keys())
+
+        # Replay events, recording inferred buffers at each snapshot time
+        ei = 0
+        errors = []
+        for t in snap_times:
+            # Observe all events up to this snapshot timestamp
+            while ei < len(sorted_events) and sorted_events[ei]["t"] <= t:
+                self.observe(sorted_events[ei])
+                ei += 1
+            # Record inferred buffer levels (non-terminal buffers only)
+            inferred = self.current_buffers()
+            truth_bufs = snap_map[t]
+            for k in range(self.n_st - 1):
+                sid = self.stations[k].sid
+                hat = inferred.get(sid, 0)
+                tru = truth_bufs[k] if k < len(truth_bufs) else 0
+                errors.append(abs(hat - tru))
+        return {"buffer_mae_units": float(np.mean(errors)) if errors else 0.0}
 
     def score_against_truth(self, truth: List[dict]) -> Dict[str, dict]:
         """Validation only. How close is an inferred cycle time to reality."""

@@ -1,24 +1,31 @@
 {
-  "shifts": 6,
+  "shifts": 8,
   "detection": {
     "recall": 1.0,
-    "precision": 0.757,
-    "alerts_per_shift": 8.7,
+    "precision": 0.671,
+    "alerts_per_shift": 8.2,
     "transient_false_alarms_total": 0,
-    "median_detect_lag_min": 56.7
+    "median_detect_lag_min": 74.1,
+    "material_param_faults": 1,
+    "material_recall": 1.0
+  },
+  "defect_risk_context": {
+    "material_param_faults": 1,
+    "defect_alerts_graded": 20,
+    "material_recall": 1.0
   },
   "by_kind": {
     "DEFECT_RISK": {
-      "true": 4,
-      "false": 11,
-      "precision": 0.267,
-      "median_lead_min": 78.7
+      "true": 1,
+      "false": 19,
+      "precision": 0.05,
+      "median_lead_min": null
     },
     "BOTTLENECK": {
-      "true": 31,
+      "true": 41,
       "false": 1,
-      "precision": 0.969,
-      "median_lead_min": 68.0
+      "precision": 0.976,
+      "median_lead_min": 73.0
     },
     "DARK_STATION": {
       "true": 4,
@@ -28,88 +35,574 @@
     }
   },
   "forecast": {
-    "twin_mae_units_per_30min": 2.13,
-    "naive_mae_units_per_30min": 2.14,
-    "twin_p90_units_per_30min": 5.01,
-    "twin_mae_during_fault": 2.19,
-    "naive_mae_during_fault": 2.18
+    "twin_mae_units_per_30min": 2.33,
+    "naive_mae_units_per_30min": 2.28,
+    "twin_p90_units_per_30min": 6.94,
+    "twin_mae_during_fault": 3.23,
+    "naive_mae_during_fault": 3.43,
+    "twin_mae_healthy": 1.17,
+    "naive_mae_healthy": 0.78,
+    "twin_bias_units": 2.15,
+    "naive_bias_units": 2.2,
+    "probes_during_fault": 380,
+    "probes_healthy": 292
   },
   "versus_spec_alarm": {
-    "cases": 8,
-    "spec_alarm_never_fired_pct": 50.0,
-    "median_lead_gain_min": 181.8,
-    "median_bodies_protected": 130
+    "cases": 11,
+    "spec_alarm_never_fired_pct": 63.6,
+    "median_lead_gain_min": 174.2,
+    "median_bodies_protected": 124
+  },
+  "variant_conditioning": {
+    "build_mix": {
+      "SEDAN": 0.52,
+      "SUV": 0.34,
+      "WAGON": 0.14
+    },
+    "dark_mae_pooled_s": 5.1,
+    "dark_mae_conditioned_s": 4.39,
+    "dark_mape_pooled_pct": 7.47,
+    "dark_mape_conditioned_pct": 6.42,
+    "per_station": [
+      {
+        "sid": "FA02",
+        "variant_spread_s": 11.9,
+        "pooled_mae_s": 6.26,
+        "conditioned_mae_s": 5.05,
+        "gain_s": 1.21
+      },
+      {
+        "sid": "FA06",
+        "variant_spread_s": 9.6,
+        "pooled_mae_s": 5.53,
+        "conditioned_mae_s": 4.34,
+        "gain_s": 1.19
+      },
+      {
+        "sid": "BS12",
+        "variant_spread_s": 8.8,
+        "pooled_mae_s": 4.93,
+        "conditioned_mae_s": 4.02,
+        "gain_s": 0.91
+      },
+      {
+        "sid": "PT04",
+        "variant_spread_s": 8.2,
+        "pooled_mae_s": 5.68,
+        "conditioned_mae_s": 4.69,
+        "gain_s": 0.99
+      },
+      {
+        "sid": "PT06",
+        "variant_spread_s": 7.0,
+        "pooled_mae_s": 5.12,
+        "conditioned_mae_s": 4.65,
+        "gain_s": 0.48
+      },
+      {
+        "sid": "FA15",
+        "variant_spread_s": 6.2,
+        "pooled_mae_s": 4.4,
+        "conditioned_mae_s": 3.91,
+        "gain_s": 0.49
+      },
+      {
+        "sid": "FA14",
+        "variant_spread_s": 3.9,
+        "pooled_mae_s": 5.12,
+        "conditioned_mae_s": 4.82,
+        "gain_s": 0.29
+      },
+      {
+        "sid": "PT09",
+        "variant_spread_s": 3.1,
+        "pooled_mae_s": 3.77,
+        "conditioned_mae_s": 3.64,
+        "gain_s": 0.14
+      }
+    ]
+  },
+  "trust_loop": {
+    "per_shift": [
+      {
+        "shift": 1,
+        "BOTTLENECK": {
+          "fired": 4,
+          "graded": 4,
+          "shift_precision": 1.0,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "graded": 2,
+          "shift_precision": 0.0,
+          "lifetime_graded": 2,
+          "lifetime_precision": 0.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 55.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 0,
+          "lifetime_precision": null,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 2,
+        "BOTTLENECK": {
+          "fired": 8,
+          "graded": 8,
+          "shift_precision": 1.0,
+          "lifetime_graded": 12,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "graded": 2,
+          "shift_precision": 0.0,
+          "lifetime_graded": 4,
+          "lifetime_precision": 0.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 55.0
+        },
+        "DARK_STATION": {
+          "fired": 4,
+          "graded": 4,
+          "shift_precision": 1.0,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 3,
+        "BOTTLENECK": {
+          "fired": 7,
+          "graded": 7,
+          "shift_precision": 1.0,
+          "lifetime_graded": 19,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 4,
+          "graded": 4,
+          "shift_precision": 0.25,
+          "lifetime_graded": 8,
+          "lifetime_precision": 0.125,
+          "threshold_bump": 18.0,
+          "fire_floor": 55.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 4,
+        "BOTTLENECK": {
+          "fired": 3,
+          "graded": 3,
+          "shift_precision": 1.0,
+          "lifetime_graded": 22,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "graded": 2,
+          "shift_precision": 0.0,
+          "lifetime_graded": 10,
+          "lifetime_precision": 0.1,
+          "threshold_bump": 30.0,
+          "fire_floor": 65.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 5,
+        "BOTTLENECK": {
+          "fired": 7,
+          "graded": 7,
+          "shift_precision": 1.0,
+          "lifetime_graded": 29,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 3,
+          "graded": 3,
+          "shift_precision": 0.0,
+          "lifetime_graded": 13,
+          "lifetime_precision": 0.077,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 6,
+        "BOTTLENECK": {
+          "fired": 4,
+          "graded": 4,
+          "shift_precision": 0.75,
+          "lifetime_graded": 33,
+          "lifetime_precision": 0.97,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 1,
+          "graded": 1,
+          "shift_precision": 0.0,
+          "lifetime_graded": 14,
+          "lifetime_precision": 0.071,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 7,
+        "BOTTLENECK": {
+          "fired": 5,
+          "graded": 5,
+          "shift_precision": 1.0,
+          "lifetime_graded": 38,
+          "lifetime_precision": 0.974,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "graded": 2,
+          "shift_precision": 0.0,
+          "lifetime_graded": 16,
+          "lifetime_precision": 0.062,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      {
+        "shift": 8,
+        "BOTTLENECK": {
+          "fired": 4,
+          "graded": 4,
+          "shift_precision": 1.0,
+          "lifetime_graded": 42,
+          "lifetime_precision": 0.976,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 4,
+          "graded": 4,
+          "shift_precision": 0.0,
+          "lifetime_graded": 20,
+          "lifetime_precision": 0.05,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "graded": 0,
+          "shift_precision": null,
+          "lifetime_graded": 4,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      }
+    ],
+    "final_threshold_bump": {
+      "BOTTLENECK": 0.0,
+      "DEFECT_RISK": 35.0,
+      "DARK_STATION": 0.0
+    },
+    "final_lifetime_precision": {
+      "BOTTLENECK": 0.976,
+      "DEFECT_RISK": 0.05,
+      "DARK_STATION": 1.0
+    }
   },
   "sensor_sweep": [
     {
       "scan_miss_rate": 0.0,
       "cameras": true,
-      "dark_mae_s": 4.63,
-      "dark_mape_pct": 7.15,
-      "bias_s": 0.61
+      "dark_mae_s": 4.57,
+      "dark_mape_pct": 6.69,
+      "bias_s": 0.26
     },
     {
       "scan_miss_rate": 0.0,
       "cameras": false,
-      "dark_mae_s": 4.52,
-      "dark_mape_pct": 7.01,
-      "bias_s": 1.07
+      "dark_mae_s": 4.45,
+      "dark_mape_pct": 6.56,
+      "bias_s": 0.84
     },
     {
       "scan_miss_rate": 0.05,
       "cameras": true,
-      "dark_mae_s": 4.64,
-      "dark_mape_pct": 7.16,
-      "bias_s": 0.54
+      "dark_mae_s": 4.58,
+      "dark_mape_pct": 6.69,
+      "bias_s": 0.2
     },
     {
       "scan_miss_rate": 0.05,
       "cameras": false,
-      "dark_mae_s": 4.55,
-      "dark_mape_pct": 7.07,
-      "bias_s": 1.09
+      "dark_mae_s": 4.5,
+      "dark_mape_pct": 6.64,
+      "bias_s": 0.91
     },
     {
       "scan_miss_rate": 0.15,
       "cameras": true,
-      "dark_mae_s": 4.67,
-      "dark_mape_pct": 7.18,
-      "bias_s": 0.36
-    },
-    {
-      "scan_miss_rate": 0.15,
-      "cameras": false,
       "dark_mae_s": 4.63,
-      "dark_mape_pct": 7.2,
-      "bias_s": 1.15
+      "dark_mape_pct": 6.75,
+      "bias_s": 0.02
+    },
+    {
+      "scan_miss_rate": 0.15,
+      "cameras": false,
+      "dark_mae_s": 4.58,
+      "dark_mape_pct": 6.76,
+      "bias_s": 0.96
     },
     {
       "scan_miss_rate": 0.3,
       "cameras": true,
-      "dark_mae_s": 4.74,
-      "dark_mape_pct": 7.26,
-      "bias_s": 0.11
+      "dark_mae_s": 4.71,
+      "dark_mape_pct": 6.83,
+      "bias_s": -0.31
     },
     {
       "scan_miss_rate": 0.3,
       "cameras": false,
-      "dark_mae_s": 4.78,
-      "dark_mape_pct": 7.43,
-      "bias_s": 1.2
+      "dark_mae_s": 4.72,
+      "dark_mape_pct": 6.96,
+      "bias_s": 1.01
     },
     {
       "scan_miss_rate": 0.5,
       "cameras": true,
-      "dark_mae_s": 4.91,
-      "dark_mape_pct": 7.49,
-      "bias_s": -0.25
+      "dark_mae_s": 4.88,
+      "dark_mape_pct": 7.04,
+      "bias_s": -0.63
     },
     {
       "scan_miss_rate": 0.5,
       "cameras": false,
-      "dark_mae_s": 4.99,
-      "dark_mape_pct": 7.77,
-      "bias_s": 1.41
+      "dark_mae_s": 4.95,
+      "dark_mape_pct": 7.28,
+      "bias_s": 1.08
     }
-  ]
+  ],
+  "buffer_reconstruction_mae_units": 0.643,
+  "multi_causal": {
+    "shifts": 4,
+    "carry_in": {
+      "cases": 4,
+      "named_true_source": 1.0,
+      "named_symptom_station_only": 0.0,
+      "named_nothing": 0.0
+    },
+    "ambient": {
+      "cases": 4,
+      "detected": 1.0,
+      "mean_stations_blamed": 7.5,
+      "mean_stations_in_zone": 7.5
+    },
+    "intermittent": {
+      "cases": 4,
+      "detected": 1.0,
+      "median_lead_min": 8.9
+    },
+    "operator": {
+      "cases": 4,
+      "detected": 1.0
+    },
+    "per_shift": [
+      {
+        "carry_in": {
+          "source": "BS13",
+          "symptom_station": "PT08",
+          "named_source": true,
+          "named_symptom_only": false,
+          "named_nothing": false,
+          "true_fails_attributed_to_source": 133,
+          "true_fails_in_window": 220
+        },
+        "ambient": {
+          "zone": "BODY",
+          "stations_in_zone_with_params": 10,
+          "stations_blamed": 10,
+          "alerts_in_zone": 20,
+          "detected": true
+        },
+        "intermittent": {
+          "station": "FA08",
+          "duty_on_s": 927,
+          "duty_off_s": 905,
+          "detected": true,
+          "lead_s": 524
+        },
+        "operator": {
+          "station": "BS12",
+          "detected": true,
+          "kinds": [
+            "BOTTLENECK"
+          ]
+        }
+      },
+      {
+        "carry_in": {
+          "source": "BS11",
+          "symptom_station": "FA06",
+          "named_source": true,
+          "named_symptom_only": false,
+          "named_nothing": false,
+          "true_fails_attributed_to_source": 12,
+          "true_fails_in_window": 71
+        },
+        "ambient": {
+          "zone": "BODY",
+          "stations_in_zone_with_params": 10,
+          "stations_blamed": 10,
+          "alerts_in_zone": 20,
+          "detected": true
+        },
+        "intermittent": {
+          "station": "BS09",
+          "duty_on_s": 1109,
+          "duty_off_s": 1136,
+          "detected": true,
+          "lead_s": 592
+        },
+        "operator": {
+          "station": "FA06",
+          "detected": true,
+          "kinds": [
+            "BOTTLENECK",
+            "DARK_STATION"
+          ]
+        }
+      },
+      {
+        "carry_in": {
+          "source": "BS08",
+          "symptom_station": "FA09",
+          "named_source": true,
+          "named_symptom_only": false,
+          "named_nothing": false,
+          "true_fails_attributed_to_source": 25,
+          "true_fails_in_window": 57
+        },
+        "ambient": {
+          "zone": "PAINT",
+          "stations_in_zone_with_params": 5,
+          "stations_blamed": 5,
+          "alerts_in_zone": 10,
+          "detected": true
+        },
+        "intermittent": {
+          "station": "FA03",
+          "duty_on_s": 1090,
+          "duty_off_s": 839,
+          "detected": true,
+          "lead_s": 542
+        },
+        "operator": {
+          "station": "FA14",
+          "detected": true,
+          "kinds": [
+            "BOTTLENECK",
+            "DARK_STATION"
+          ]
+        }
+      },
+      {
+        "carry_in": {
+          "source": "BS02",
+          "symptom_station": "BS05",
+          "named_source": true,
+          "named_symptom_only": false,
+          "named_nothing": false,
+          "true_fails_attributed_to_source": 29,
+          "true_fails_in_window": 59
+        },
+        "ambient": {
+          "zone": "PAINT",
+          "stations_in_zone_with_params": 5,
+          "stations_blamed": 5,
+          "alerts_in_zone": 10,
+          "detected": true
+        },
+        "intermittent": {
+          "station": "FA10",
+          "duty_on_s": 845,
+          "duty_off_s": 979,
+          "detected": true,
+          "lead_s": 487
+        },
+        "operator": {
+          "station": "FA06",
+          "detected": true,
+          "kinds": [
+            "BOTTLENECK"
+          ]
+        }
+      }
+    ]
+  }
 }

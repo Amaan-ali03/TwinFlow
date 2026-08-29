@@ -8,7 +8,7 @@ import argparse
 import json
 import os
 
-from twinflow.line import build_line, tier_summary
+from twinflow.line import build_line, tier_summary, variant_mix
 from twinflow.simulator import LineSimulator, default_scenario
 from twinflow.twin import TwinFlow
 
@@ -23,6 +23,8 @@ def build_payload(horizon_s: int = 28800, seed: int = 7) -> dict:
     line = [{
         "sid": s.sid, "name": s.name, "zone": s.zone, "index": s.index,
         "tier": s.tier, "nominal_cycle_s": s.nominal_cycle_s,
+        "mix_cycle_s": round(s.mix_cycle_s, 2),
+        "variant_cycle_mult": s.variant_cycle_mult,
         "has_camera": s.has_camera, "is_inspection": s.is_inspection,
         "manual_check": s.manual_check, "out_buffer_cap": s.out_buffer_cap,
         "params": list(s.process_params.keys()),
@@ -46,6 +48,11 @@ def build_payload(horizon_s: int = 28800, seed: int = 7) -> dict:
     throughput = sim.throughput_series(600)
 
     fails = [q for q in sim.quality if q["result"] == "FAIL"]
+    # what the line actually built this shift, against the declared mix
+    variant_counts = {}
+    for u in sim.units().values():
+        if u.variant:
+            variant_counts[u.variant] = variant_counts.get(u.variant, 0) + 1
     origin_counts = {}
     for q in fails:
         origin_counts[q["origin_station"]] = origin_counts.get(q["origin_station"], 0) + 1
@@ -57,6 +64,8 @@ def build_payload(horizon_s: int = 28800, seed: int = 7) -> dict:
             "n_stations": len(stations), "tiers": tiers,
             "n_events": len(sim.events), "n_completed": len(sim.completed),
             "n_quality_checks": len(sim.quality), "n_fails": len(fails),
+            "build_mix": variant_mix(stations),
+            "variant_counts": variant_counts,
         },
         "line": line,
         "zone_totals": zone_totals,

@@ -10,6 +10,7 @@ record, arriving late, exactly as it would in a real installation.
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 import math
+import os
 import numpy as np
 
 from .line import build_line, TIER_A, TIER_B, TIER_C
@@ -17,10 +18,16 @@ from .virtual_sensors import VirtualSensorBank
 from .propagate import PropagationEngine, STARVE, BLOCK
 from .drift import DriftBank, DRIFTING, EXCURSION, WATCH
 from .genealogy import GenealogyStore
+from .defect_model import DefectRiskModel
 from . import decision as D
 
 STATE_CODE = {"WORK": 0, "STARVED": 1, "BLOCKED": 2}
 DRIFT_CODE = {"STABLE": 0, "WATCH": 1, "DRIFTING": 2, "EXCURSION": 3}
+
+# Fitted offline by fit_calibration.py, over shifts this run has never seen.
+# Absent on a clean clone, in which case _defect_alerts() falls back to the
+# hand-tuned confidence formula it always used.
+_CALIBRATION_PATH = os.path.join(os.path.dirname(__file__), "calibration.json")
 
 
 class TwinFlow:
@@ -28,18 +35,24 @@ class TwinFlow:
     BOTTLENECK_MARGIN = 1.15     # constraint must exceed takt by this much
     DARK_MARGIN = 1.22
 
-    def __init__(self, stations=None):
+    def __init__(self, stations=None, ledger_state=None):
+        """ledger_state: an earlier run's AlertLedger.export_state(), so the
+        precision-driven threshold retune carries across shifts instead of
+        restarting from zero every time the twin is constructed."""
         self.stations = stations or build_line()
         self.sids = [s.sid for s in self.stations]
         self.names = {s.sid: s.name for s in self.stations}
-        self.nominal = {s.sid: s.nominal_cycle_s for s in self.stations}
+        # Mix-weighted standard, not the base variant's. Every cycle time the
+        # twin observes is an average over the models that actually ran, so a
+        # single-model standard would read the build mix as a process fault.
+        self.nominal = {s.sid: s.mix_cycle_s for s in self.stations}
         self.takt = max(self.nominal.values())
 
         self.vs = VirtualSensorBank(self.stations)
         self.drift = DriftBank(self.stations)
         self.gen = GenealogyStore(self.stations)
         self.eng = PropagationEngine(self.stations)
-        self.ledger = D.AlertLedger()
+        self.ledger = D.AlertLedger(ledger_state)
 
         self.frames: List[dict] = []
         self.last_conf: Dict[str, float] = {s: 0.99 for s in self.sids}
@@ -47,6 +60,13 @@ class TwinFlow:
         self._drift_since: Dict[str, int] = {}
         self._first_alert_t: Dict[Tuple[str, str], int] = {}
         self.units_out: int = 0
+
+        # uid -> sid -> drift.DriftBank.feature_row() at the moment that
+        # body passed that station. Feeds the L4b origin_model's per-body
+        # containment ranking. Only populated for param-carrying stations;
+        # a body that only ever touches dark stations has no entries here.
+        self.unit_features: Dict[int, Dict[str, dict]] = {}
+        self.defect_model: Optional[DefectRiskModel] = DefectRiskModel.load(_CALIBRATION_PATH)
 
     # ------------------------------------------------------------------
     def run(self, sim, frame_every_s: int = 120, verbose: bool = False) -> dict:
@@ -62,6 +82,9 @@ class TwinFlow:
                 ev = events[ei]
                 r = self.vs.observe(ev)
                 self.drift.observe(ev)
+                frow = self.drift.feature_row(ev)
+                if frow is not None:
+                    self.unit_features.setdefault(ev["uid"], {})[ev["sid"]] = frow
                 self.gen.observe(ev)
                 self.last_conf[ev["sid"]] = r.confidence
                 self.last_state[ev["sid"]] = r.state
@@ -96,7 +119,8 @@ class TwinFlow:
         self.ledger.resolve(sim.horizon_s + 10 ** 6, lambda a: self._grade(a, sim))
         return {"frames": self.frames,
                 "alerts": [a.as_dict() for a in self.ledger.alerts],
-                "ledger": self.ledger.summary()}
+                "ledger": self.ledger.summary(),
+                "ledger_state": self.ledger.export_state()}
 
     # ------------------------------------------------------------------
     def _bottleneck_alerts(self, t: int, fc, cycles) -> List[D.Alert]:
@@ -158,19 +182,20 @@ class TwinFlow:
         for s in self.stations:
             if s.tier != TIER_C:
                 continue
-            hat = cycles.get(s.sid, s.nominal_cycle_s)
-            if hat < s.nominal_cycle_s * self.DARK_MARGIN:
+            std = self.nominal[s.sid]
+            hat = cycles.get(s.sid, std)
+            if hat < std * self.DARK_MARGIN:
                 continue
             conf = self.last_conf.get(s.sid, 0.5)
-            sev = (hat - s.nominal_cycle_s) / max(self.takt, 1.0) * 12.0
+            sev = (hat - std) / max(self.takt, 1.0) * 12.0
             risk = D.risk_score(max(sev, 1.0), conf, 600.0, self.HORIZON_S)
             act, owner, impact = D.dark_station_action(
-                s.sid, s.name, hat, s.nominal_cycle_s, conf)
+                s.sid, s.name, hat, std, conf)
             a = self.ledger.fire(
                 t=t, kind=D.DARK_STATION, sid=s.sid,
                 headline=(f"{s.sid} {s.name} is slow. No sensors here, "
                           f"inferred work content {hat:.0f} s against "
-                          f"{s.nominal_cycle_s:.0f} s standard."),
+                          f"{std:.0f} s standard for the mix built."),
                 risk=risk, confidence=conf, tier=D.tier_for(risk),
                 severity_units=max(sev, 1.0),
                 evidence=[
@@ -189,7 +214,9 @@ class TwinFlow:
 
     def _defect_alerts(self, t: int) -> List[D.Alert]:
         out = []
-        for snap in self.drift.drifting_stations():
+        drifting = self.drift.drifting_stations()
+        self._forget_recovered({s["sid"] for s in drifting})
+        for snap in drifting:
             sid = snap["sid"]
             pname = snap["worst_param"]
             p = snap["params"][pname]
@@ -199,13 +226,33 @@ class TwinFlow:
             ttl_min = (p["ttl_spec_s"] / 60.0) if p["ttl_spec_s"] else None
             limit = p["lsl"] if p["ewma_z"] < 0 else p["usl"]
 
-            # confidence grows with both the size of the shift and how long
-            # it has held, so a fault that just crossed the alarm threshold
-            # does not get the same weight as one that has held for an hour
+            # Confidence that gates firing is always the hand-tuned formula
+            # below. A 200-shift, 5-fold cross-validated, Wilson-lower-bound
+            # evaluation of L4b's alert_model (see defect_model.py) shows it
+            # does discriminate — 66.7% out-of-fold precision against a
+            # 19.4% base rate — but only at 18.7% recall. Gating here would
+            # buy the precision number at the cost of missing four material
+            # drifts in five, and catching every one of them is the claim
+            # this engine is built on. So the alert fires on every DRIFTING
+            # episode exactly as it always did, and the learned probability
+            # rides along as evidence.
             hold_factor = min(1.0, p["streak"] / (self.drift.monitors[sid].HOLD * 3))
             conf = 0.45 + 0.35 * min(1.0, abs(p["ewma_z"]) / 10.0) + 0.15 * hold_factor
             if snap["t2_flag"]:
                 conf = min(0.97, conf + 0.05)
+
+            # The learned probability is surfaced as additional evidence,
+            # not as the firing gate. Its useful job is ordering: given
+            # three open drift alerts, it says which one to walk to first.
+            learned_note = None
+            if self.defect_model is not None:
+                learned_conf = self.defect_model.alert_confidence(
+                    snap, elapsed_s=t - since, n_affected=cont["total"])
+                learned_note = (f"learned confidence {learned_conf:.0%} "
+                                 f"(offline calibration against "
+                                 f"{self.defect_model.n_train_shifts} training "
+                                 f"shifts — informational, not a firing gate; "
+                                 f"see fit_calibration.py)")
             sev = min(14.0, cont["total"] * 0.35 + 2.0)
             risk = D.risk_score(sev, conf, 900.0, self.HORIZON_S)
             act, owner, impact = D.defect_action(
@@ -233,17 +280,77 @@ class TwinFlow:
                      f"{lag/60:.0f} min of line time" if lag else
                      f"first inspection downstream is {insp}"),
                     f"every individual reading is still inside specification",
-                ],
+                ] + ([learned_note] if learned_note else []),
                 action=act, owner=owner, expected_impact=impact,
                 falsifier=(f"If the fallout rate for bodies built at {sid} "
                            f"after this alert is no worse than the shift "
                            f"baseline, this alert was wrong."),
                 verify_by=int(t + 10800), lead_time_s=None)
+
+            # fire() returns None when it folded this tick into the alert
+            # already on screen, refreshing that alert's headline and
+            # evidence. The containment ranking has to be refreshed with
+            # them: it used to be set only on the new-alert branch, so a
+            # supervisor read "285 bodies affected so far" in the headline
+            # next to "ranked by likely contributor (144 bodies)" in the
+            # list right below it.
+            target = a or self.ledger.open_for(D.DEFECT_RISK, sid)
+            if target is not None:
+                target._window = (since, t)
+                target.at_risk_ranked = self._ranked_containment(sid, cont)
             if a:
-                a._window = (since, t)
+                # Exactly what alert_model was scored on at the moment this
+                # alert fired, kept for fit_calibration.py to train against.
+                # Only on the firing tick: the decision being modelled is
+                # "should this alert exist", which is taken once.
+                a._l4b = {"snap": snap, "elapsed_s": t - since,
+                          "n_affected": cont["total"]}
                 self._first_alert_t.setdefault((a.kind, a.sid), t)
                 out.append(a)
         return out
+
+    def _forget_recovered(self, drifting_sids: set) -> None:
+        """Drop _drift_since for stations that have stopped drifting.
+
+        Without this the entry set on a station's first drift lives for the
+        whole run, so a station that recovers and drifts again hours later
+        gets a containment window reaching back across the healthy stretch
+        in between. The 20-body hold counter in drift.py is what filters
+        transients, so leaving DRIFTING is already a considered judgement,
+        not a flicker — but hold the window open while an alert about it is
+        still on screen, since that alert's own counts are derived from it.
+        """
+        for sid in list(self._drift_since):
+            if sid in drifting_sids:
+                continue
+            if self.ledger.open_for(D.DEFECT_RISK, sid) is not None:
+                continue
+            del self._drift_since[sid]
+
+    def _ranked_containment(self, sid: str, cont: dict) -> List[dict]:
+        """Bodies the containment window caught, ranked by the origin
+        model's belief that sid specifically is what put a defect into that
+        body — turns a flat "here are 40 bodies" list into "start with
+        these 12". Empty on a clean clone with no calibration.json.
+
+        A body with no drift feature row at sid gets risk None, not a
+        number, and sorts last. It is still listed: the list length has to
+        keep matching the containment count the headline quotes.
+        """
+        if self.defect_model is None:
+            return []
+        on_line = set(cont["still_on_line"])
+        ranked = []
+        for uid in cont["still_on_line"] + cont["already_rolled_out"]:
+            row = self.unit_features.get(uid, {}).get(sid)
+            risk = self.defect_model.body_risk(row)
+            ranked.append({
+                "uid": uid,
+                "risk": None if risk is None else round(risk, 4),
+                "status": "on_line" if uid in on_line else "rolled_out",
+            })
+        ranked.sort(key=lambda r: -(r["risk"] if r["risk"] is not None else -1.0))
+        return ranked
 
     def _idx(self, sid: str) -> int:
         return self.sids.index(sid)
@@ -344,7 +451,7 @@ class TwinFlow:
             ev_by_sid.setdefault(e.sid, e)
         rows_cyc, rows_cf, rows_st, rows_buf, rows_dr, rows_fc = [], [], [], [], [], []
         for s in self.stations:
-            rows_cyc.append(round(cycles.get(s.sid, s.nominal_cycle_s), 1))
+            rows_cyc.append(round(cycles.get(s.sid, self.nominal[s.sid]), 1))
             rows_cf.append(round(self.last_conf.get(s.sid, 0.9), 2))
             rows_st.append(STATE_CODE.get(self.last_state.get(s.sid, "WORK"), 0))
             rows_buf.append(int(buffers.get(s.sid, 0)))

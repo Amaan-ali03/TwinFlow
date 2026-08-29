@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Tuple
 import math
 import numpy as np
 
-from .line import Station, build_line, TIER_A, TIER_B, TIER_C
+from .line import Station, build_line, variant_mix, TIER_A, TIER_B, TIER_C
 
 WORK = "WORK"
 STARVED = "STARVED"
@@ -49,7 +49,32 @@ DETECTION = {
 
 @dataclass
 class Fault:
-    kind: str                 # "cycle" or "param"
+    """One injected cause.
+
+    The first two kinds are single-station and monotone, which is the easy
+    case and the one the prototype was originally built against. The brief
+    asks for harder ones — causes that are shared across stations, that come
+    from the operator rather than the equipment, that arrive on the part
+    instead of originating here, and that switch on and off instead of
+    ramping once.
+
+      cycle     equipment wear at one station, cycle time creep
+      param     calibration drift of one process parameter at one station
+      ambient   a zone-wide environmental driver (booth temperature, humidity)
+                that moves every parameter in the zone at once, each by its
+                own drift_sensitivity. magnitude is in sigmas.
+      operator  a manning change at one station: a different person, a
+                different pace, switching at a break boundary
+      carry_in  a defect that appears at `station` but is caused by `source`
+                putting the part out of tolerance further upstream
+
+    Any kind becomes intermittent by setting duty_on_s and duty_off_s: the
+    cause is present for duty_on_s, absent for duty_off_s, repeating. A
+    condition that keeps disappearing before anyone reaches the station is
+    the one plants find hardest, and it is a different failure mode from a
+    transient that self-corrects once.
+    """
+    kind: str
     station: str
     start_s: int
     ramp_s: int               # seconds to reach full magnitude
@@ -57,10 +82,18 @@ class Fault:
     magnitude: float          # cycle: multiplier delta. param: shift in units
     param: Optional[str] = None
     label: str = ""
+    zone: Optional[str] = None        # ambient: which zone it covers
+    source: Optional[str] = None      # carry_in: where the real cause is
+    duty_on_s: int = 0                # intermittent: 0 means continuous
+    duty_off_s: int = 0
 
     def intensity(self, t: int) -> float:
         if t < self.start_s or t >= self.end_s:
             return 0.0
+        if self.duty_on_s > 0 and self.duty_off_s > 0:
+            phase = (t - self.start_s) % (self.duty_on_s + self.duty_off_s)
+            if phase >= self.duty_on_s:
+                return 0.0
         if t >= self.start_s + self.ramp_s:
             return 1.0
         return (t - self.start_s) / max(1.0, self.ramp_s)
@@ -70,6 +103,7 @@ class Fault:
 class Unit:
     uid: int
     launched_s: int
+    variant: Optional[str] = None      # which model this body is
     passport: Dict[str, dict] = field(default_factory=dict)
     latent: List[Tuple[str, str]] = field(default_factory=list)  # (type, origin)
     caught_at: Optional[str] = None
@@ -125,6 +159,12 @@ class LineSimulator:
         self.warmup_units = warmup_units
         self.scan_miss_dark = scan_miss_dark
         self.scan_miss_auto = scan_miss_auto
+        self.by_sid: Dict[str, Station] = {s.sid: s for s in self.stations}
+        self._carry_in_sids = {f.station for f in self.faults
+                               if f.kind == "carry_in"}
+        mix = variant_mix(self.stations)
+        self._variants: List[str] = sorted(mix)
+        self._variant_p = [mix[v] for v in self._variants]
 
         self.events: List[dict] = []        # station completion events (the feed)
         self.quality: List[dict] = []       # inspection dispositions
@@ -138,19 +178,63 @@ class LineSimulator:
     def _fault_cycle_mult(self, sid: str, t: int) -> float:
         m = 1.0
         for f in self.faults:
-            if f.kind == "cycle" and f.station == sid:
+            # equipment wear and a manning change are both cycle-time causes;
+            # they are separate kinds because they need separate fixes, and
+            # because the twin should not be scored as if they were the same.
+            if f.kind in ("cycle", "operator") and f.station == sid:
                 m += f.magnitude * f.intensity(t)
         return m
 
     def _fault_param_shift(self, sid: str, param: str, t: int) -> float:
         d = 0.0
+        st = self.by_sid.get(sid)
         for f in self.faults:
             if f.kind == "param" and f.station == sid and f.param == param:
                 d += f.magnitude * f.intensity(t)
+            elif f.kind == "ambient" and st is not None and f.zone == st.zone:
+                # One driver, many stations. Each parameter responds by its
+                # own declared sensitivity, which is what makes this hard to
+                # tell apart from several independent tools drifting at once.
+                spec = st.process_params.get(param)
+                if spec is not None:
+                    d += (f.magnitude * f.intensity(t) *
+                          spec["sigma"] * spec["drift_sensitivity"])
         return d
 
-    def _sample_cycle(self, st: Station, t: int) -> float:
-        base = st.nominal_cycle_s * self._fault_cycle_mult(st.sid, t)
+    def _carry_in_boost(self, st: Station, u: Unit, t: int) -> Tuple[float, Optional[str]]:
+        """Extra defect risk here caused by a part that arrived already bad.
+
+        Nothing at this station is out of tolerance. The parameter that put
+        the defect in was recorded on this body's passport several stations
+        ago, which is exactly the trace genealogy has to find.
+        """
+        boost, origin = 0.0, None
+        for f in self.faults:
+            if f.kind != "carry_in" or f.station != st.sid:
+                continue
+            k = f.intensity(t)
+            if k <= 0.0 or not f.source or not f.param:
+                continue
+            rec = u.passport.get(f.source)
+            src = self.by_sid.get(f.source)
+            if rec is None or src is None:
+                continue
+            spec = src.process_params.get(f.param)
+            v = (rec.get("params") or {}).get(f.param)
+            if spec is None or v is None:
+                continue
+            z = abs(v - spec["mean"]) / max(spec["sigma"], 1e-9)
+            b = f.magnitude * k * max(0.0, z - 1.0)
+            if b > boost:
+                boost, origin = b, f.source
+        return boost, origin
+
+    def _sample_cycle(self, st: Station, t: int,
+                      variant: Optional[str] = None) -> float:
+        # Work content is per variant: an SUV's harness, headliner and seat
+        # set take longer than a sedan's at the stations that fit them, and
+        # are indistinguishable from a sedan's at the stations that do not.
+        base = st.cycle_for(variant) * self._fault_cycle_mult(st.sid, t)
         # manual stations have fatter tails, operators are not robots
         if st.tier == TIER_C:
             v = self.rng.normal(base, st.cycle_sigma_s)
@@ -167,26 +251,54 @@ class LineSimulator:
             out[p] = float(self.rng.normal(spec["mean"] + shift, spec["sigma"]))
         return out
 
-    def _defect_roll(self, st: Station, params: Dict[str, float]) -> Optional[str]:
+    def _defect_roll(self, st: Station, params: Dict[str, float],
+                     u: Optional[Unit] = None,
+                     t: int = 0) -> Optional[Tuple[str, str]]:
+        """(defect type, origin station) or None.
+
+        Origin is where an 8D would place the cause, which is not always
+        where the defect was created: a part that arrived out of tolerance
+        is the upstream station's doing, and that is the attribution the
+        twin's genealogy has to reproduce from passport data alone.
+        """
         base = 0.0011
-        z_max = 0.0
+        z_own = 0.0
         for p, v in params.items():
             spec = st.process_params[p]
             z = abs(v - spec["mean"]) / spec["sigma"] * spec["drift_sensitivity"]
-            z_max = max(z_max, z)
+            z_own = max(z_own, z)
+        # a bad part arriving raises the risk here as surely as a bad tool
+        z_carry, carry_origin = (self._carry_in_boost(st, u, t)
+                                 if u is not None else (0.0, None))
+        z_max = max(z_own, z_carry)
         p_def = min(0.55, base * math.exp(0.85 * max(0.0, z_max - 1.0)))
         if st.tier == TIER_C:
             p_def = max(p_def, 0.0022)          # manual work, no process trace
         if self.rng.random() < p_def:
-            return DEFECT_BY_ZONE[st.zone]
+            origin = (carry_origin if (carry_origin is not None
+                                       and z_carry > z_own) else st.sid)
+            return DEFECT_BY_ZONE[st.zone], origin
         return None
 
     # ------------------------------------------------------------------
     def _new_unit(self, t: int) -> Unit:
         self._uid += 1
-        u = Unit(uid=self._uid, launched_s=t)
+        u = Unit(uid=self._uid, launched_s=t, variant=self._sample_variant())
         self._live.append(u)
         return u
+
+    def _sample_variant(self) -> Optional[str]:
+        """Draw the next body's model from the line's build mix.
+
+        Independent draws, not a scheduled sequence. A real plant sequences
+        deliberately to avoid consecutive labour-heavy bodies at one station;
+        drawing independently is the harder case for the twin, not the easier
+        one, because it puts more variance in the hand-off gaps L2 reads.
+        """
+        if not self._variants:
+            return None
+        i = int(self.rng.choice(len(self._variants), p=self._variant_p))
+        return self._variants[i]
 
     def _complete(self, i: int, t: int) -> None:
         st = self.stations[i]
@@ -194,9 +306,12 @@ class LineSimulator:
         u = s.unit
         dur = t - s.started_s
         params = self._sample_params(st, t)
-        dtype = self._defect_roll(st, params) if st.process_params or st.tier == TIER_C else None
+        rollable = (st.process_params or st.tier == TIER_C
+                    or st.sid in self._carry_in_sids)
+        roll = self._defect_roll(st, params, u, t) if rollable else None
+        dtype, origin_sid = roll if roll else (None, None)
         if dtype:
-            u.latent.append((dtype, st.sid))
+            u.latent.append((dtype, origin_sid))
 
         u.passport[st.sid] = {
             "t": t, "cycle_s": dur, "params": params,
@@ -211,6 +326,10 @@ class LineSimulator:
         ev = {
             "t": t, "sid": st.sid, "uid": u.uid, "zone": st.zone,
             "tier": st.tier,
+            # The build order is MES data, known before the body is launched
+            # and readable at every station including the dark ones. It is
+            # not a sensor and not ground truth.
+            "variant": u.variant,
             "scan_ok": scan_ok,
             "mes_scan": t if scan_ok else None,
             "cycle_s": round(s.work_s, 2) if st.tier in (TIER_A, TIER_B) else None,
@@ -229,11 +348,13 @@ class LineSimulator:
         self.events.append(ev)
         self.truth.append({
             "t": t, "sid": st.sid, "uid": u.uid,
+            "variant": u.variant,
             "true_cycle_s": round(s.work_s, 2),
             "true_station_time_s": round(dur, 2),
             "true_blocked_s": s.blocked_s,
             "true_starved_s": s.starved_s,
             "defect_created": dtype,
+            "defect_origin": origin_sid,
             "cycle_mult": round(self._fault_cycle_mult(st.sid, t), 4),
         })
 
@@ -315,7 +436,7 @@ class LineSimulator:
                         continue
                     u = self.buffers[i - 1].pop(0)
                 s.unit = u
-                s.remaining = self._sample_cycle(self.stations[i], t)
+                s.remaining = self._sample_cycle(self.stations[i], t, u.variant)
                 s.started_s = t
                 s.status = WORK
 

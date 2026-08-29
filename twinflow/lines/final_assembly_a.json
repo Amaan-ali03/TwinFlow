@@ -1,0 +1,1242 @@
+{
+  "line_id": "FINAL_ASSEMBLY_A",
+  "description": "42 station mixed model line: body construction, paint, final assembly.",
+  "variants": {
+    "SEDAN": {
+      "share": 0.52,
+      "cycle_mult": 1.0
+    },
+    "SUV": {
+      "share": 0.34,
+      "cycle_mult": 1.05
+    },
+    "WAGON": {
+      "share": 0.14,
+      "cycle_mult": 1.02
+    }
+  },
+  "stations": [
+    {
+      "sid": "BS01",
+      "name": "Underbody framing",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 56.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS02",
+      "name": "Underbody weld 1",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 58.0,
+      "cycle_sigma_s": 2.2,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS03",
+      "name": "Underbody weld 2",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 58.0,
+      "cycle_sigma_s": 2.2,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS04",
+      "name": "Side frame left",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 60.0,
+      "cycle_sigma_s": 2.5,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      },
+      "variant_cycle_mult": {
+        "SUV": 1.1,
+        "WAGON": 1.04
+      }
+    },
+    {
+      "sid": "BS05",
+      "name": "Side frame right",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 60.0,
+      "cycle_sigma_s": 2.5,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      },
+      "variant_cycle_mult": {
+        "SUV": 1.1,
+        "WAGON": 1.04
+      }
+    },
+    {
+      "sid": "BS06",
+      "name": "Framing gate",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 62.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS07",
+      "name": "Respot weld cell",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 58.0,
+      "cycle_sigma_s": 2.4,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS08",
+      "name": "Roof laser braze",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 61.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      },
+      "variant_cycle_mult": {
+        "SUV": 1.12,
+        "WAGON": 1.1
+      }
+    },
+    {
+      "sid": "BS09",
+      "name": "Hem and clinch",
+      "zone": "BODY",
+      "tier": "B",
+      "nominal_cycle_s": 57.0,
+      "cycle_sigma_s": 2.6,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {}
+    },
+    {
+      "sid": "BS10",
+      "name": "Door fit",
+      "zone": "BODY",
+      "tier": "B",
+      "nominal_cycle_s": 59.0,
+      "cycle_sigma_s": 3.0,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {}
+    },
+    {
+      "sid": "BS11",
+      "name": "Fender fit",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 57.0,
+      "cycle_sigma_s": 2.3,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS12",
+      "name": "Metal finish",
+      "zone": "BODY",
+      "tier": "C",
+      "nominal_cycle_s": 63.0,
+      "cycle_sigma_s": 5.5,
+      "out_buffer_cap": 3,
+      "has_camera": true,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.14,
+        "WAGON": 1.08
+      }
+    },
+    {
+      "sid": "BS13",
+      "name": "Body geometry gate",
+      "zone": "BODY",
+      "tier": "A",
+      "nominal_cycle_s": 55.0,
+      "cycle_sigma_s": 1.8,
+      "out_buffer_cap": 3,
+      "has_camera": false,
+      "is_inspection": true,
+      "manual_check": false,
+      "process_params": {
+        "weld_current_a": {
+          "mean": 9800,
+          "sigma": 55,
+          "lsl": 9450,
+          "usl": 10150,
+          "drift_sensitivity": 1.0
+        },
+        "electrode_force_n": {
+          "mean": 3400,
+          "sigma": 40,
+          "lsl": 3200,
+          "usl": 3600,
+          "drift_sensitivity": 1.0
+        },
+        "vibration_mm_s": {
+          "mean": 2.1,
+          "sigma": 0.18,
+          "lsl": 0.0,
+          "usl": 3.2,
+          "drift_sensitivity": 1.4
+        },
+        "cell_temp_c": {
+          "mean": 38.0,
+          "sigma": 1.2,
+          "lsl": 20.0,
+          "usl": 52.0,
+          "drift_sensitivity": 0.6
+        }
+      }
+    },
+    {
+      "sid": "BS14",
+      "name": "Body store transfer",
+      "zone": "BODY",
+      "tier": "B",
+      "nominal_cycle_s": 52.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 12,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {}
+    },
+    {
+      "sid": "PT01",
+      "name": "Pretreat and e-coat",
+      "zone": "PAINT",
+      "tier": "A",
+      "nominal_cycle_s": 64.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "booth_temp_c": {
+          "mean": 23.0,
+          "sigma": 0.5,
+          "lsl": 20.0,
+          "usl": 26.0,
+          "drift_sensitivity": 1.1
+        },
+        "humidity_pct": {
+          "mean": 62.0,
+          "sigma": 2.0,
+          "lsl": 50.0,
+          "usl": 72.0,
+          "drift_sensitivity": 1.0
+        },
+        "film_thickness_um": {
+          "mean": 38.0,
+          "sigma": 1.3,
+          "lsl": 32.0,
+          "usl": 45.0,
+          "drift_sensitivity": 1.3
+        },
+        "vibration_mm_s": {
+          "mean": 1.6,
+          "sigma": 0.15,
+          "lsl": 0.0,
+          "usl": 2.8,
+          "drift_sensitivity": 1.0
+        }
+      }
+    },
+    {
+      "sid": "PT02",
+      "name": "E-coat oven",
+      "zone": "PAINT",
+      "tier": "A",
+      "nominal_cycle_s": 66.0,
+      "cycle_sigma_s": 1.6,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "booth_temp_c": {
+          "mean": 23.0,
+          "sigma": 0.5,
+          "lsl": 20.0,
+          "usl": 26.0,
+          "drift_sensitivity": 1.1
+        },
+        "humidity_pct": {
+          "mean": 62.0,
+          "sigma": 2.0,
+          "lsl": 50.0,
+          "usl": 72.0,
+          "drift_sensitivity": 1.0
+        },
+        "film_thickness_um": {
+          "mean": 38.0,
+          "sigma": 1.3,
+          "lsl": 32.0,
+          "usl": 45.0,
+          "drift_sensitivity": 1.3
+        },
+        "vibration_mm_s": {
+          "mean": 1.6,
+          "sigma": 0.15,
+          "lsl": 0.0,
+          "usl": 2.8,
+          "drift_sensitivity": 1.0
+        }
+      }
+    },
+    {
+      "sid": "PT03",
+      "name": "Sealer robot",
+      "zone": "PAINT",
+      "tier": "B",
+      "nominal_cycle_s": 62.0,
+      "cycle_sigma_s": 3.0,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {}
+    },
+    {
+      "sid": "PT04",
+      "name": "Sealer manual touch",
+      "zone": "PAINT",
+      "tier": "C",
+      "nominal_cycle_s": 68.0,
+      "cycle_sigma_s": 6.0,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.12,
+        "WAGON": 1.06
+      }
+    },
+    {
+      "sid": "PT05",
+      "name": "Primer booth",
+      "zone": "PAINT",
+      "tier": "A",
+      "nominal_cycle_s": 63.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "booth_temp_c": {
+          "mean": 23.0,
+          "sigma": 0.5,
+          "lsl": 20.0,
+          "usl": 26.0,
+          "drift_sensitivity": 1.1
+        },
+        "humidity_pct": {
+          "mean": 62.0,
+          "sigma": 2.0,
+          "lsl": 50.0,
+          "usl": 72.0,
+          "drift_sensitivity": 1.0
+        },
+        "film_thickness_um": {
+          "mean": 38.0,
+          "sigma": 1.3,
+          "lsl": 32.0,
+          "usl": 45.0,
+          "drift_sensitivity": 1.3
+        },
+        "vibration_mm_s": {
+          "mean": 1.6,
+          "sigma": 0.15,
+          "lsl": 0.0,
+          "usl": 2.8,
+          "drift_sensitivity": 1.0
+        }
+      }
+    },
+    {
+      "sid": "PT06",
+      "name": "Primer sand",
+      "zone": "PAINT",
+      "tier": "C",
+      "nominal_cycle_s": 70.0,
+      "cycle_sigma_s": 6.5,
+      "out_buffer_cap": 4,
+      "has_camera": true,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.1,
+        "WAGON": 1.06
+      }
+    },
+    {
+      "sid": "PT07",
+      "name": "Base coat booth",
+      "zone": "PAINT",
+      "tier": "A",
+      "nominal_cycle_s": 65.0,
+      "cycle_sigma_s": 2.1,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "booth_temp_c": {
+          "mean": 23.0,
+          "sigma": 0.5,
+          "lsl": 20.0,
+          "usl": 26.0,
+          "drift_sensitivity": 1.1
+        },
+        "humidity_pct": {
+          "mean": 62.0,
+          "sigma": 2.0,
+          "lsl": 50.0,
+          "usl": 72.0,
+          "drift_sensitivity": 1.0
+        },
+        "film_thickness_um": {
+          "mean": 38.0,
+          "sigma": 1.3,
+          "lsl": 32.0,
+          "usl": 45.0,
+          "drift_sensitivity": 1.3
+        },
+        "vibration_mm_s": {
+          "mean": 1.6,
+          "sigma": 0.15,
+          "lsl": 0.0,
+          "usl": 2.8,
+          "drift_sensitivity": 1.0
+        }
+      }
+    },
+    {
+      "sid": "PT08",
+      "name": "Clear coat booth",
+      "zone": "PAINT",
+      "tier": "A",
+      "nominal_cycle_s": 64.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 4,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "booth_temp_c": {
+          "mean": 23.0,
+          "sigma": 0.5,
+          "lsl": 20.0,
+          "usl": 26.0,
+          "drift_sensitivity": 1.1
+        },
+        "humidity_pct": {
+          "mean": 62.0,
+          "sigma": 2.0,
+          "lsl": 50.0,
+          "usl": 72.0,
+          "drift_sensitivity": 1.0
+        },
+        "film_thickness_um": {
+          "mean": 38.0,
+          "sigma": 1.3,
+          "lsl": 32.0,
+          "usl": 45.0,
+          "drift_sensitivity": 1.3
+        },
+        "vibration_mm_s": {
+          "mean": 1.6,
+          "sigma": 0.15,
+          "lsl": 0.0,
+          "usl": 2.8,
+          "drift_sensitivity": 1.0
+        }
+      }
+    },
+    {
+      "sid": "PT09",
+      "name": "Paint inspect deck",
+      "zone": "PAINT",
+      "tier": "C",
+      "nominal_cycle_s": 61.0,
+      "cycle_sigma_s": 5.0,
+      "out_buffer_cap": 4,
+      "has_camera": true,
+      "is_inspection": true,
+      "manual_check": true,
+      "process_params": {}
+    },
+    {
+      "sid": "PT10",
+      "name": "Paint store transfer",
+      "zone": "PAINT",
+      "tier": "B",
+      "nominal_cycle_s": 54.0,
+      "cycle_sigma_s": 2.2,
+      "out_buffer_cap": 15,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {}
+    },
+    {
+      "sid": "FA01",
+      "name": "Door removal",
+      "zone": "FINAL",
+      "tier": "B",
+      "nominal_cycle_s": 58.0,
+      "cycle_sigma_s": 2.8,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {}
+    },
+    {
+      "sid": "FA02",
+      "name": "Harness lay in",
+      "zone": "FINAL",
+      "tier": "C",
+      "nominal_cycle_s": 66.0,
+      "cycle_sigma_s": 6.0,
+      "out_buffer_cap": 2,
+      "has_camera": true,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.18,
+        "WAGON": 1.06
+      }
+    },
+    {
+      "sid": "FA03",
+      "name": "Cockpit module set",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 62.0,
+      "cycle_sigma_s": 2.2,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      }
+    },
+    {
+      "sid": "FA04",
+      "name": "Cockpit bolt torque",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 59.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        },
+        "bolt_torque_nm": {
+          "mean": 42.0,
+          "sigma": 0.55,
+          "lsl": 38.0,
+          "usl": 46.0,
+          "drift_sensitivity": 1.6
+        },
+        "angle_deg": {
+          "mean": 88.0,
+          "sigma": 1.4,
+          "lsl": 80.0,
+          "usl": 96.0,
+          "drift_sensitivity": 1.1
+        }
+      }
+    },
+    {
+      "sid": "FA05",
+      "name": "Glass urethane",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 60.0,
+      "cycle_sigma_s": 2.1,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      }
+    },
+    {
+      "sid": "FA06",
+      "name": "Headliner",
+      "zone": "FINAL",
+      "tier": "C",
+      "nominal_cycle_s": 64.0,
+      "cycle_sigma_s": 5.8,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.15,
+        "WAGON": 1.12
+      }
+    },
+    {
+      "sid": "FA07",
+      "name": "Carpet and console",
+      "zone": "FINAL",
+      "tier": "B",
+      "nominal_cycle_s": 61.0,
+      "cycle_sigma_s": 3.2,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.1,
+        "WAGON": 1.06
+      }
+    },
+    {
+      "sid": "FA08",
+      "name": "Seat set",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 57.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      },
+      "variant_cycle_mult": {
+        "SUV": 1.2,
+        "WAGON": 1.02
+      }
+    },
+    {
+      "sid": "FA09",
+      "name": "Chassis marriage",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 68.0,
+      "cycle_sigma_s": 2.6,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        },
+        "press_force_kn": {
+          "mean": 12.5,
+          "sigma": 0.3,
+          "lsl": 11.4,
+          "usl": 13.6,
+          "drift_sensitivity": 1.2
+        }
+      },
+      "variant_cycle_mult": {
+        "SUV": 1.08,
+        "WAGON": 1.03
+      }
+    },
+    {
+      "sid": "FA10",
+      "name": "Suspension torque",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 62.0,
+      "cycle_sigma_s": 2.2,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        },
+        "bolt_torque_nm": {
+          "mean": 42.0,
+          "sigma": 0.55,
+          "lsl": 38.0,
+          "usl": 46.0,
+          "drift_sensitivity": 1.6
+        },
+        "angle_deg": {
+          "mean": 88.0,
+          "sigma": 1.4,
+          "lsl": 80.0,
+          "usl": 96.0,
+          "drift_sensitivity": 1.1
+        }
+      }
+    },
+    {
+      "sid": "FA11",
+      "name": "Brake line",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 60.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      }
+    },
+    {
+      "sid": "FA12",
+      "name": "Wheel and tyre",
+      "zone": "FINAL",
+      "tier": "B",
+      "nominal_cycle_s": 55.0,
+      "cycle_sigma_s": 2.4,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.08,
+        "WAGON": 1.02
+      }
+    },
+    {
+      "sid": "FA13",
+      "name": "Fluid fill",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 63.0,
+      "cycle_sigma_s": 2.0,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      }
+    },
+    {
+      "sid": "FA14",
+      "name": "Door rehang",
+      "zone": "FINAL",
+      "tier": "C",
+      "nominal_cycle_s": 65.0,
+      "cycle_sigma_s": 5.5,
+      "out_buffer_cap": 2,
+      "has_camera": true,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.06,
+        "WAGON": 1.04
+      }
+    },
+    {
+      "sid": "FA15",
+      "name": "Bumper and trim",
+      "zone": "FINAL",
+      "tier": "C",
+      "nominal_cycle_s": 62.0,
+      "cycle_sigma_s": 5.2,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": false,
+      "manual_check": true,
+      "process_params": {},
+      "variant_cycle_mult": {
+        "SUV": 1.1,
+        "WAGON": 1.05
+      }
+    },
+    {
+      "sid": "FA16",
+      "name": "Electrical flash",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 58.0,
+      "cycle_sigma_s": 1.9,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": true,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      }
+    },
+    {
+      "sid": "FA17",
+      "name": "End of line test",
+      "zone": "FINAL",
+      "tier": "A",
+      "nominal_cycle_s": 72.0,
+      "cycle_sigma_s": 3.0,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": true,
+      "manual_check": false,
+      "process_params": {
+        "vibration_mm_s": {
+          "mean": 1.4,
+          "sigma": 0.14,
+          "lsl": 0.0,
+          "usl": 2.6,
+          "drift_sensitivity": 1.0
+        },
+        "cell_temp_c": {
+          "mean": 31.0,
+          "sigma": 1.0,
+          "lsl": 18.0,
+          "usl": 45.0,
+          "drift_sensitivity": 0.7
+        }
+      }
+    },
+    {
+      "sid": "FA18",
+      "name": "Roll out and audit",
+      "zone": "FINAL",
+      "tier": "B",
+      "nominal_cycle_s": 54.0,
+      "cycle_sigma_s": 2.5,
+      "out_buffer_cap": 2,
+      "has_camera": false,
+      "is_inspection": true,
+      "manual_check": false,
+      "process_params": {}
+    }
+  ]
+}

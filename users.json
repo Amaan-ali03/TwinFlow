@@ -1,0 +1,7 @@
+{
+  "users": [
+    { "username": "floor", "password": "floor123", "role": "floor", "display_name": "Floor Supervisor" },
+    { "username": "manager", "password": "manager123", "role": "manager", "display_name": "Plant Manager" },
+    { "username": "leadership", "password": "leadership123", "role": "leadership", "display_name": "Leadership" }
+  ]
+}

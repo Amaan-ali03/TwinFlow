@@ -14,9 +14,10 @@ constant, so buffer levels move linearly and the next crossing time is exact
 arithmetic rather than a stepped simulation. The forecast advances crossing
 by crossing until the horizon is reached.
 
-Root cause is read straight off the solution: follow a starved station
-upstream until a station is found whose effective rate equals its own
-capacity rate. That station is the binding constraint.
+Root cause for a predicted starvation or blocking event is an argmin over the
+relevant upstream or downstream slice of raw capacity rates — the slowest
+station in the chain is the binding constraint. Explainable by construction,
+not learned.
 """
 
 from dataclasses import dataclass, field
@@ -68,7 +69,11 @@ class PropagationEngine:
         self.sids = [s.sid for s in stations]
         self.caps = [s.out_buffer_cap for s in stations]
         self.n = len(stations)
-        self.nominal = nominal_cycles or {s.sid: s.nominal_cycle_s for s in stations}
+        # Mix-weighted, not the base variant's cycle time. Observed cycles
+        # arriving from L2 are an average over whatever mix actually ran, so
+        # comparing them against a single-model standard would book a
+        # scheduling effect — an SUV-heavy hour — as sustained rate loss.
+        self.nominal = nominal_cycles or {s.sid: s.mix_cycle_s for s in stations}
 
     # ------------------------------------------------------------------
     def _effective_rates(self, cap_rate: List[float], buf: List[float]) -> List[float]:
@@ -102,9 +107,21 @@ class PropagationEngine:
     def forecast(self, cycles: Dict[str, float], buffers: Dict[str, float],
                  horizon_s: int = 1800,
                  confidences: Optional[Dict[str, float]] = None,
-                 trajectory_step_s: int = 60) -> Forecast:
+                 trajectory_step_s: int = 60,
+                 availability: float = 1.0) -> Forecast:
+        """Propagate cycle times and buffer levels forward over the horizon.
+
+        `availability` scales every station's capable rate to account for the
+        output a line loses to causes this model does not represent — micro
+        stoppages, tool changes, the operator stepping away. Left at 1.0 the
+        forecast is a capacity ceiling and reads systematically optimistic;
+        callers with an end of line counter to compare against can pass the
+        observed shortfall instead. It never changes *which* station is the
+        constraint, only how much the line produces.
+        """
+        avail = min(1.0, max(0.05, float(availability)))
         conf = confidences or {sid: 1.0 for sid in self.sids}
-        cap_rate = [1.0 / max(1.0, cycles.get(sid, self.nominal[sid]))
+        cap_rate = [avail / max(1.0, cycles.get(sid, self.nominal[sid]))
                     for sid in self.sids]
         buf = [float(min(self.caps[i], max(0.0, buffers.get(self.sids[i], 0))))
                for i in range(self.n)]
@@ -112,7 +129,11 @@ class PropagationEngine:
         fc = Forecast(horizon_s=horizon_s)
         bi = int(min(range(self.n), key=lambda i: cap_rate[i]))
         fc.constraint_sid = self.sids[bi]
-        fc.constraint_cycle_s = round(1.0 / cap_rate[bi], 2)
+        # Reported cycle times stay the observed ones. `avail` is a whole-line
+        # scalar, so it moves every rate together and cannot change which
+        # station is slowest — dividing it back out here keeps the number a
+        # supervisor reads equal to the number the station is running at.
+        fc.constraint_cycle_s = round(avail / cap_rate[bi], 2)
         fc.takt_s = fc.constraint_cycle_s
 
         seen_events = set()
@@ -163,7 +184,7 @@ class PropagationEngine:
                     csid = self.sids[cause_i]
                     fc.events.append(ForecastEvent(
                         at_s=round(t, 1), sid=sid, kind=kind, cause_sid=csid,
-                        cause_cycle_s=round(1.0 / cap_rate[cause_i], 1),
+                        cause_cycle_s=round(avail / cap_rate[cause_i], 1),
                         confidence=round(min(conf.get(csid, 1.0),
                                              conf.get(sid, 1.0)), 3)))
 

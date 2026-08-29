@@ -1,0 +1,693 @@
+{
+  "shifts": 10,
+  "horizon_s": 28800,
+  "build_mix": {
+    "SEDAN": 0.52,
+    "SUV": 0.34,
+    "WAGON": 0.14
+  },
+  "per_shift": [
+    {
+      "shift": 1,
+      "seed": 300,
+      "bodies_out": 343,
+      "constraint_sid": "FA04",
+      "constraint_share": 0.403,
+      "mean_rate_loss_per_hr": 6.42,
+      "min_runway_min": 3.0,
+      "quality_checks": 1808,
+      "quality_fails": 23,
+      "fallout_pct": 1.27,
+      "alerts_fired": 7,
+      "precision_all": 0.7142857142857143,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 5,
+          "true": 5,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "true": 0,
+          "false": 2,
+          "precision": 0.0,
+          "lifetime_precision": 0.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 55.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": null,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SUV": 156,
+        "SEDAN": 259,
+        "WAGON": 76
+      }
+    },
+    {
+      "shift": 2,
+      "seed": 301,
+      "bodies_out": 351,
+      "constraint_sid": "BS13",
+      "constraint_share": 0.313,
+      "mean_rate_loss_per_hr": 9.86,
+      "min_runway_min": 2.9,
+      "quality_checks": 1741,
+      "quality_fails": 24,
+      "fallout_pct": 1.38,
+      "alerts_fired": 10,
+      "precision_all": 0.8,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 6,
+          "true": 6,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 4,
+          "true": 2,
+          "false": 2,
+          "precision": 0.5,
+          "lifetime_precision": 0.3333333333333333,
+          "threshold_bump": 6.0,
+          "fire_floor": 55.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": null,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SEDAN": 223,
+        "WAGON": 59,
+        "SUV": 129
+      }
+    },
+    {
+      "shift": 3,
+      "seed": 302,
+      "bodies_out": 310,
+      "constraint_sid": "BS14",
+      "constraint_share": 0.361,
+      "mean_rate_loss_per_hr": 13.77,
+      "min_runway_min": 1.4,
+      "quality_checks": 1659,
+      "quality_fails": 21,
+      "fallout_pct": 1.27,
+      "alerts_fired": 16,
+      "precision_all": 0.75,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 8,
+          "true": 8,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 4,
+          "true": 0,
+          "false": 4,
+          "precision": 0.0,
+          "lifetime_precision": 0.2,
+          "threshold_bump": 24.0,
+          "fire_floor": 59.0
+        },
+        "DARK_STATION": {
+          "fired": 4,
+          "true": 4,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SUV": 150,
+        "WAGON": 67,
+        "SEDAN": 233
+      }
+    },
+    {
+      "shift": 4,
+      "seed": 303,
+      "bodies_out": 360,
+      "constraint_sid": "PT06",
+      "constraint_share": 0.489,
+      "mean_rate_loss_per_hr": 4.51,
+      "min_runway_min": 3.0,
+      "quality_checks": 1873,
+      "quality_fails": 69,
+      "fallout_pct": 3.68,
+      "alerts_fired": 6,
+      "precision_all": 0.8333333333333334,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 2,
+          "true": 2,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 4,
+          "true": 3,
+          "false": 1,
+          "precision": 0.75,
+          "lifetime_precision": 0.35714285714285715,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SEDAN": 255,
+        "SUV": 166,
+        "WAGON": 69
+      }
+    },
+    {
+      "shift": 5,
+      "seed": 304,
+      "bodies_out": 383,
+      "constraint_sid": "BS05",
+      "constraint_share": 0.468,
+      "mean_rate_loss_per_hr": 7.3,
+      "min_runway_min": 3.0,
+      "quality_checks": 1921,
+      "quality_fails": 23,
+      "fallout_pct": 1.2,
+      "alerts_fired": 7,
+      "precision_all": 0.7142857142857143,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 5,
+          "true": 5,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "true": 0,
+          "false": 2,
+          "precision": 0.0,
+          "lifetime_precision": 0.3125,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SUV": 135,
+        "WAGON": 44,
+        "SEDAN": 259
+      }
+    },
+    {
+      "shift": 6,
+      "seed": 305,
+      "bodies_out": 382,
+      "constraint_sid": "PT06",
+      "constraint_share": 0.313,
+      "mean_rate_loss_per_hr": 4.17,
+      "min_runway_min": 2.9,
+      "quality_checks": 1927,
+      "quality_fails": 24,
+      "fallout_pct": 1.25,
+      "alerts_fired": 5,
+      "precision_all": 0.6,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 3,
+          "true": 3,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "true": 0,
+          "false": 2,
+          "precision": 0.0,
+          "lifetime_precision": 0.2777777777777778,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SUV": 164,
+        "SEDAN": 250,
+        "WAGON": 58
+      }
+    },
+    {
+      "shift": 7,
+      "seed": 306,
+      "bodies_out": 381,
+      "constraint_sid": "BS05",
+      "constraint_share": 0.361,
+      "mean_rate_loss_per_hr": 5.86,
+      "min_runway_min": 3.1,
+      "quality_checks": 1919,
+      "quality_fails": 31,
+      "fallout_pct": 1.62,
+      "alerts_fired": 6,
+      "precision_all": 0.8333333333333334,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 4,
+          "true": 4,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 2,
+          "true": 1,
+          "false": 1,
+          "precision": 0.5,
+          "lifetime_precision": 0.3,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SEDAN": 227,
+        "SUV": 162,
+        "WAGON": 74
+      }
+    },
+    {
+      "shift": 8,
+      "seed": 307,
+      "bodies_out": 342,
+      "constraint_sid": "PT04",
+      "constraint_share": 0.438,
+      "mean_rate_loss_per_hr": 6.93,
+      "min_runway_min": 3.0,
+      "quality_checks": 1741,
+      "quality_fails": 25,
+      "fallout_pct": 1.44,
+      "alerts_fired": 9,
+      "precision_all": 0.6666666666666666,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 3,
+          "true": 3,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 3,
+          "true": 0,
+          "false": 3,
+          "precision": 0.0,
+          "lifetime_precision": 0.2608695652173913,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 3,
+          "true": 3,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SUV": 154,
+        "WAGON": 62,
+        "SEDAN": 235
+      }
+    },
+    {
+      "shift": 9,
+      "seed": 308,
+      "bodies_out": 345,
+      "constraint_sid": "BS06",
+      "constraint_share": 0.472,
+      "mean_rate_loss_per_hr": 11.99,
+      "min_runway_min": 3.0,
+      "quality_checks": 1729,
+      "quality_fails": 21,
+      "fallout_pct": 1.21,
+      "alerts_fired": 7,
+      "precision_all": 0.8571428571428571,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 6,
+          "true": 6,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 1,
+          "true": 0,
+          "false": 1,
+          "precision": 0.0,
+          "lifetime_precision": 0.25,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SUV": 153,
+        "SEDAN": 218,
+        "WAGON": 43
+      }
+    },
+    {
+      "shift": 10,
+      "seed": 309,
+      "bodies_out": 321,
+      "constraint_sid": "FA10",
+      "constraint_share": 0.343,
+      "mean_rate_loss_per_hr": 10.77,
+      "min_runway_min": 3.0,
+      "quality_checks": 1714,
+      "quality_fails": 20,
+      "fallout_pct": 1.17,
+      "alerts_fired": 7,
+      "precision_all": 0.8571428571428571,
+      "by_kind": {
+        "BOTTLENECK": {
+          "fired": 6,
+          "true": 6,
+          "false": 0,
+          "precision": 1.0,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        },
+        "DEFECT_RISK": {
+          "fired": 1,
+          "true": 0,
+          "false": 1,
+          "precision": 0.0,
+          "lifetime_precision": 0.24,
+          "threshold_bump": 35.0,
+          "fire_floor": 70.0
+        },
+        "DARK_STATION": {
+          "fired": 0,
+          "true": 0,
+          "false": 0,
+          "precision": null,
+          "lifetime_precision": 1.0,
+          "threshold_bump": 0.0,
+          "fire_floor": 35.0
+        }
+      },
+      "built": {
+        "SEDAN": 230,
+        "WAGON": 78,
+        "SUV": 170
+      }
+    }
+  ],
+  "recurring_constraints": [
+    {
+      "sid": "PT06",
+      "name": "Primer sand",
+      "shifts": 2,
+      "share": 0.2
+    },
+    {
+      "sid": "BS05",
+      "name": "Side frame right",
+      "shifts": 2,
+      "share": 0.2
+    },
+    {
+      "sid": "FA04",
+      "name": "Cockpit bolt torque",
+      "shifts": 1,
+      "share": 0.1
+    },
+    {
+      "sid": "BS13",
+      "name": "Body geometry gate",
+      "shifts": 1,
+      "share": 0.1
+    },
+    {
+      "sid": "BS14",
+      "name": "Body store transfer",
+      "shifts": 1,
+      "share": 0.1
+    },
+    {
+      "sid": "PT04",
+      "name": "Sealer manual touch",
+      "shifts": 1,
+      "share": 0.1
+    },
+    {
+      "sid": "BS06",
+      "name": "Framing gate",
+      "shifts": 1,
+      "share": 0.1
+    },
+    {
+      "sid": "FA10",
+      "name": "Suspension torque",
+      "shifts": 1,
+      "share": 0.1
+    }
+  ],
+  "trend": {
+    "bodies_out": [
+      343,
+      351,
+      310,
+      360,
+      383,
+      382,
+      381,
+      342,
+      345,
+      321
+    ],
+    "fallout_pct": [
+      1.27,
+      1.38,
+      1.27,
+      3.68,
+      1.2,
+      1.25,
+      1.62,
+      1.44,
+      1.21,
+      1.17
+    ],
+    "precision_all": [
+      0.7142857142857143,
+      0.8,
+      0.75,
+      0.8333333333333334,
+      0.7142857142857143,
+      0.6,
+      0.8333333333333334,
+      0.6666666666666666,
+      0.8571428571428571,
+      0.8571428571428571
+    ],
+    "BOTTLENECK_precision": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "DEFECT_RISK_precision": [
+      0.0,
+      0.5,
+      0.0,
+      0.75,
+      0.0,
+      0.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "DARK_STATION_precision": [
+      null,
+      null,
+      1.0,
+      null,
+      null,
+      null,
+      null,
+      1.0,
+      null,
+      null
+    ],
+    "BOTTLENECK_lifetime_precision": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "DEFECT_RISK_lifetime_precision": [
+      0.0,
+      0.3333333333333333,
+      0.2,
+      0.35714285714285715,
+      0.3125,
+      0.2777777777777778,
+      0.3,
+      0.2608695652173913,
+      0.25,
+      0.24
+    ],
+    "DARK_STATION_lifetime_precision": [
+      null,
+      null,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "BOTTLENECK_fire_floor": [
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0
+    ],
+    "DEFECT_RISK_fire_floor": [
+      55.0,
+      55.0,
+      59.0,
+      70.0,
+      70.0,
+      70.0,
+      70.0,
+      70.0,
+      70.0,
+      70.0
+    ],
+    "DARK_STATION_fire_floor": [
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0
+    ]
+  },
+  "totals": {
+    "bodies_out": 3518,
+    "quality_fails": 281,
+    "alerts_fired": 80,
+    "mean_fallout_pct": 1.55
+  }
+}

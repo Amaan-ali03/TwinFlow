@@ -12,10 +12,19 @@ Tier C  dark station, manual checklist, only MES barcode scans at hand off
 
 Reference parameters from the brief: 30 to 50 stations across body, paint and
 final assembly, majority instrumented, meaningful minority manual.
+
+The topology itself is data, not code. It lives in lines/*.json so the same
+engine can be pointed at a different line, a different zone or a different
+plant without touching a single estimator. Nothing downstream of here refers
+to a station by name: layers select on tier and on declared process
+parameters, so a line with a different station list needs a new JSON file and
+nothing else.
 """
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
+import json
+import os
 
 TIER_A = "A"
 TIER_B = "B"
@@ -33,13 +42,20 @@ class Station:
     zone: str
     index: int
     tier: str
-    nominal_cycle_s: float
+    nominal_cycle_s: float          # the base variant's cycle time
     cycle_sigma_s: float
     out_buffer_cap: int
     has_camera: bool = False
     process_params: Dict[str, Dict[str, float]] = field(default_factory=dict)
     is_inspection: bool = False
     manual_check: bool = False
+    # Mixed model: work content is not one number per station. A body with a
+    # third seat row, a longer roof and a bigger harness takes measurably
+    # longer at the stations that fit those things, and the same station is
+    # unremarkable on the base variant. Both dicts are resolved at load time
+    # from the line spec, so every layer reads them off the station.
+    variant_cycle_mult: Dict[str, float] = field(default_factory=dict)
+    variant_share: Dict[str, float] = field(default_factory=dict)
 
     @property
     def observed_signals(self) -> List[str]:
@@ -48,6 +64,25 @@ class Station:
         if self.tier == TIER_B:
             return ["cycle_time"]
         return ["mes_scan"] + (["motion_duty"] if self.has_camera else [])
+
+    def cycle_for(self, variant: Optional[str] = None) -> float:
+        """Nominal cycle time for one variant, or the mix average for None."""
+        if variant is None:
+            return self.mix_cycle_s
+        return self.nominal_cycle_s * self.variant_cycle_mult.get(variant, 1.0)
+
+    @property
+    def mix_cycle_s(self) -> float:
+        """Nominal cycle time averaged over the line's declared build mix.
+
+        This, not nominal_cycle_s, is the honest baseline to compare an
+        observed cycle time against: an estimator watching a mixed sequence
+        converges on the mix average, so scoring it against the base variant
+        would read a pure scheduling effect as a process problem.
+        """
+        if not self.variant_share:
+            return self.nominal_cycle_s
+        return sum(sh * self.cycle_for(v) for v, sh in self.variant_share.items())
 
 
 def _param(mean: float, sigma: float, lsl: float, usl: float,
@@ -61,122 +96,75 @@ def _param(mean: float, sigma: float, lsl: float, usl: float,
     }
 
 
-def build_line() -> List[Station]:
-    """Return the 42 station mixed model line used by the prototype."""
-    S: List[Station] = []
-    idx = 0
+_LINES_DIR = os.path.join(os.path.dirname(__file__), "lines")
+_DEFAULT_LINE = os.path.join(_LINES_DIR, "final_assembly_a.json")
 
-    # ---------------- BODY CONSTRUCTION: 14 stations ----------------
-    body_spec = [
-        ("BS01", "Underbody framing", TIER_A, 56.0, 2.0),
-        ("BS02", "Underbody weld 1", TIER_A, 58.0, 2.2),
-        ("BS03", "Underbody weld 2", TIER_A, 58.0, 2.2),
-        ("BS04", "Side frame left", TIER_A, 60.0, 2.5),
-        ("BS05", "Side frame right", TIER_A, 60.0, 2.5),
-        ("BS06", "Framing gate", TIER_A, 62.0, 2.0),
-        ("BS07", "Respot weld cell", TIER_A, 58.0, 2.4),
-        ("BS08", "Roof laser braze", TIER_A, 61.0, 2.0),
-        ("BS09", "Hem and clinch", TIER_B, 57.0, 2.6),
-        ("BS10", "Door fit", TIER_B, 59.0, 3.0),
-        ("BS11", "Fender fit", TIER_A, 57.0, 2.3),
-        ("BS12", "Metal finish", TIER_C, 63.0, 5.5),
-        ("BS13", "Body geometry gate", TIER_A, 55.0, 1.8),
-        ("BS14", "Body store transfer", TIER_B, 52.0, 2.0),
-    ]
-    for sid, name, tier, cyc, sig in body_spec:
-        st = Station(sid, name, ZONE_BODY, idx, tier, cyc, sig,
-                     out_buffer_cap=3 if sid != "BS14" else 12)
-        if tier == TIER_A:
-            st.process_params = {
-                "weld_current_a": _param(9800, 55, 9450, 10150),
-                "electrode_force_n": _param(3400, 40, 3200, 3600),
-                "vibration_mm_s": _param(2.1, 0.18, 0.0, 3.2, 1.4),
-                "cell_temp_c": _param(38.0, 1.2, 20.0, 52.0, 0.6),
-            }
-        if tier == TIER_C:
-            st.manual_check = True
-            st.has_camera = True
-        if sid == "BS13":
-            st.is_inspection = True
-        S.append(st)
-        idx += 1
 
-    # ---------------- PAINT SHOP: 10 stations ----------------
-    paint_spec = [
-        ("PT01", "Pretreat and e-coat", TIER_A, 64.0, 2.0),
-        ("PT02", "E-coat oven", TIER_A, 66.0, 1.6),
-        ("PT03", "Sealer robot", TIER_B, 62.0, 3.0),
-        ("PT04", "Sealer manual touch", TIER_C, 68.0, 6.0),
-        ("PT05", "Primer booth", TIER_A, 63.0, 2.0),
-        ("PT06", "Primer sand", TIER_C, 70.0, 6.5),
-        ("PT07", "Base coat booth", TIER_A, 65.0, 2.1),
-        ("PT08", "Clear coat booth", TIER_A, 64.0, 2.0),
-        ("PT09", "Paint inspect deck", TIER_C, 61.0, 5.0),
-        ("PT10", "Paint store transfer", TIER_B, 54.0, 2.2),
-    ]
-    for sid, name, tier, cyc, sig in paint_spec:
-        st = Station(sid, name, ZONE_PAINT, idx, tier, cyc, sig,
-                     out_buffer_cap=4 if sid != "PT10" else 15)
-        if tier == TIER_A:
-            st.process_params = {
-                "booth_temp_c": _param(23.0, 0.5, 20.0, 26.0, 1.1),
-                "humidity_pct": _param(62.0, 2.0, 50.0, 72.0, 1.0),
-                "film_thickness_um": _param(38.0, 1.3, 32.0, 45.0, 1.3),
-                "vibration_mm_s": _param(1.6, 0.15, 0.0, 2.8, 1.0),
-            }
-        if tier == TIER_C:
-            st.manual_check = True
-            st.has_camera = sid in ("PT06", "PT09")
-        if sid == "PT09":
-            st.is_inspection = True
-        S.append(st)
-        idx += 1
+def _variant_defaults(spec: dict) -> tuple:
+    """(share by variant, default cycle multiplier by variant) from a line spec.
 
-    # ---------------- FINAL ASSEMBLY: 18 stations ----------------
-    final_spec = [
-        ("FA01", "Door removal", TIER_B, 58.0, 2.8),
-        ("FA02", "Harness lay in", TIER_C, 66.0, 6.0),
-        ("FA03", "Cockpit module set", TIER_A, 62.0, 2.2),
-        ("FA04", "Cockpit bolt torque", TIER_A, 59.0, 2.0),
-        ("FA05", "Glass urethane", TIER_A, 60.0, 2.1),
-        ("FA06", "Headliner", TIER_C, 64.0, 5.8),
-        ("FA07", "Carpet and console", TIER_B, 61.0, 3.2),
-        ("FA08", "Seat set", TIER_A, 57.0, 2.0),
-        ("FA09", "Chassis marriage", TIER_A, 68.0, 2.6),
-        ("FA10", "Suspension torque", TIER_A, 62.0, 2.2),
-        ("FA11", "Brake line", TIER_A, 60.0, 2.0),
-        ("FA12", "Wheel and tyre", TIER_B, 55.0, 2.4),
-        ("FA13", "Fluid fill", TIER_A, 63.0, 2.0),
-        ("FA14", "Door rehang", TIER_C, 65.0, 5.5),
-        ("FA15", "Bumper and trim", TIER_C, 62.0, 5.2),
-        ("FA16", "Electrical flash", TIER_A, 58.0, 1.9),
-        ("FA17", "End of line test", TIER_A, 72.0, 3.0),
-        ("FA18", "Roll out and audit", TIER_B, 54.0, 2.5),
-    ]
-    for sid, name, tier, cyc, sig in final_spec:
-        st = Station(sid, name, ZONE_FINAL, idx, tier, cyc, sig,
-                     out_buffer_cap=2)
-        if tier == TIER_A:
-            st.process_params = {
-                "vibration_mm_s": _param(1.4, 0.14, 0.0, 2.6, 1.0),
-                "cell_temp_c": _param(31.0, 1.0, 18.0, 45.0, 0.7),
-            }
-        if sid in ("FA04", "FA10"):
-            st.process_params["bolt_torque_nm"] = _param(
-                42.0, 0.55, 38.0, 46.0, 1.6)
-            st.process_params["angle_deg"] = _param(88.0, 1.4, 80.0, 96.0, 1.1)
-        if sid == "FA09":
-            st.process_params["press_force_kn"] = _param(
-                12.5, 0.3, 11.4, 13.6, 1.2)
-        if tier == TIER_C:
-            st.manual_check = True
-            st.has_camera = sid in ("FA02", "FA14")
-        if sid in ("FA16", "FA17", "FA18"):
-            st.is_inspection = True
-        S.append(st)
-        idx += 1
+    A spec with no "variants" block yields two empty dicts, and every station
+    then behaves exactly as a single model line — which is what an older
+    lines/*.json file gets, with no migration.
+    """
+    block = spec.get("variants") or {}
+    if not block:
+        return {}, {}
+    total = sum(float(v.get("share", 0.0)) for v in block.values())
+    if total <= 0:
+        return {}, {}
+    share = {k: float(v.get("share", 0.0)) / total for k, v in block.items()}
+    mult = {k: float(v.get("cycle_mult", 1.0)) for k, v in block.items()}
+    return share, mult
 
-    return S
+
+def _station_from_spec(idx: int, spec: dict,
+                       share: Optional[Dict[str, float]] = None,
+                       default_mult: Optional[Dict[str, float]] = None) -> Station:
+    st = Station(
+        sid=spec["sid"], name=spec["name"], zone=spec["zone"], index=idx,
+        tier=spec["tier"], nominal_cycle_s=spec["nominal_cycle_s"],
+        cycle_sigma_s=spec["cycle_sigma_s"], out_buffer_cap=spec["out_buffer_cap"],
+        has_camera=spec.get("has_camera", False),
+        is_inspection=spec.get("is_inspection", False),
+        manual_check=spec.get("manual_check", False),
+    )
+    # process_params keys are param name -> {mean, sigma, lsl, usl,
+    # drift_sensitivity}; JSON round-trips this shape exactly, so no
+    # per-field defaulting is needed here the way _param() used to do it.
+    st.process_params = {p: dict(v) for p, v in spec.get("process_params", {}).items()}
+    # Line-wide multiplier per variant, overridden per station where this
+    # station's work genuinely differs by model (seat set, harness, roof).
+    st.variant_share = dict(share or {})
+    st.variant_cycle_mult = dict(default_mult or {})
+    st.variant_cycle_mult.update(
+        {k: float(v) for k, v in (spec.get("variant_cycle_mult") or {}).items()})
+    return st
+
+
+def build_line(spec_path: Optional[str] = None) -> List[Station]:
+    """Return the station chain for one line, loaded from a JSON spec.
+
+    The topology used to be a hardcoded literal in this function. It is now
+    data: lines/final_assembly_a.json is the 42 station mixed model line used
+    by the prototype, and a different line is a different file passed here.
+    Station order in the file is the line order — index is assigned by
+    position, not stored in the file.
+    """
+    path = spec_path or _DEFAULT_LINE
+    with open(path) as f:
+        spec = json.load(f)
+    share, mult = _variant_defaults(spec)
+    return [_station_from_spec(i, s, share, mult)
+            for i, s in enumerate(spec["stations"])]
+
+
+def variant_mix(stations: List[Station]) -> Dict[str, float]:
+    """The line's build mix, read back off the stations that carry it."""
+    for s in stations:
+        if s.variant_share:
+            return dict(s.variant_share)
+    return {}
 
 
 def tier_summary(stations: List[Station]) -> Dict[str, int]:

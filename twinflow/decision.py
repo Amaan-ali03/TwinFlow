@@ -56,6 +56,11 @@ class Alert:
     updates: int = 0
     last_update_t: int = 0
     peak_risk: float = 0.0
+    # DEFECT_RISK only: bodies the containment window caught, ranked by the
+    # L4b origin_model's belief that this station specifically put the
+    # defect into that body. "Likely contributor", never "root cause" — see
+    # defect_model.py.
+    at_risk_ranked: List[dict] = field(default_factory=list)
 
     def as_dict(self) -> dict:
         return {
@@ -70,6 +75,7 @@ class Alert:
             "peak_risk": round(self.peak_risk, 1),
             "outcome": self.outcome, "outcome_note": self.outcome_note,
             "lead_time_s": self.lead_time_s,
+            "at_risk_ranked": self.at_risk_ranked,
         }
 
 
@@ -95,13 +101,57 @@ class AlertLedger:
     COOLDOWN_S = {BOTTLENECK: 2700, DEFECT_RISK: 7200, DARK_STATION: 2700}
     PRECISION_FLOOR = {BOTTLENECK: 0.70, DEFECT_RISK: 0.55, DARK_STATION: 0.65}
 
-    def __init__(self):
+    def __init__(self, state: Optional[dict] = None):
         self.alerts: List[Alert] = []
         self.last_fired: Dict[Tuple[str, str], int] = {}
         self.threshold_bump: Dict[str, float] = {
             BOTTLENECK: 0.0, DEFECT_RISK: 0.0, DARK_STATION: 0.0}
+        # Grading history carried in from earlier shifts. _retune() needs at
+        # least 5 graded alerts of a kind before it will move a threshold,
+        # and DEFECT_RISK fires around 2.5 times a shift — so a ledger that
+        # starts empty every shift never engages the loop on the one alert
+        # type whose precision sits furthest below its floor. Counts only;
+        # the alert objects stay with the shift that fired them.
+        self.carried: Dict[str, Dict[str, int]] = {
+            k: {"true": 0, "false": 0} for k in self.threshold_bump}
+        # graded population at the last retune, per kind: the loop adjusts
+        # once per newly graded alert, not once per resolve() call.
+        self._retuned_at: Dict[str, int] = {k: 0 for k in self.threshold_bump}
+        if state:
+            self.load_state(state)
 
     # ------------------------------------------------------------------
+    def export_state(self) -> dict:
+        """What a later shift needs to keep retuning where this one left off."""
+        graded = {}
+        for kind in self.threshold_bump:
+            t, f = self.graded_counts(kind)
+            graded[kind] = {"true": t, "false": f}
+        return {"threshold_bump": dict(self.threshold_bump), "graded": graded}
+
+    def load_state(self, state: dict) -> None:
+        for kind, bump in (state.get("threshold_bump") or {}).items():
+            if kind in self.threshold_bump:
+                self.threshold_bump[kind] = float(bump)
+        for kind, row in (state.get("graded") or {}).items():
+            if kind in self.carried:
+                self.carried[kind] = {"true": int(row.get("true", 0)),
+                                      "false": int(row.get("false", 0))}
+        # the carried population has already had its say on the thresholds
+        for kind in self.threshold_bump:
+            t, f = self.graded_counts(kind)
+            self._retuned_at[kind] = t + f
+
+    # ------------------------------------------------------------------
+    def fire_floor(self, kind: str) -> float:
+        """Risk score an alert of this kind must clear to interrupt anyone.
+        Rises as _retune() reacts to measured precision below the floor."""
+        floor = 35.0 + self.threshold_bump[kind]
+        if kind == DEFECT_RISK:
+            # defect claims need more belief before they interrupt anyone
+            floor = max(floor, 55.0)
+        return floor
+
     def can_fire(self, kind: str, sid: str, t: int) -> bool:
         last = self.last_fired.get((kind, sid))
         return last is None or (t - last) >= self.COOLDOWN_S[kind]
@@ -120,10 +170,7 @@ class AlertLedger:
         seven times about one nutrunner is how a system gets muted.
         """
         kind, sid, t = kw["kind"], kw["sid"], kw["t"]
-        floor = 35.0 + self.threshold_bump[kind]
-        if kind == DEFECT_RISK:
-            floor = max(floor, 55.0)   # defect claims need more belief before they interrupt anyone
-        if kw["risk"] < floor:
+        if kw["risk"] < self.fire_floor(kind):
             return None
 
         live = self.open_for(kind, sid)
@@ -164,18 +211,39 @@ class AlertLedger:
         self._retune()
 
     def _retune(self) -> None:
+        """Move a kind's firing threshold when its measured precision misses
+        the floor. Judged on the lifetime population (this shift plus any
+        carry-in), and only when that population has actually grown since the
+        last adjustment — resolve() runs every frame, and bumping on every
+        call would saturate the threshold within minutes of a shift start."""
         for kind, floor in self.PRECISION_FLOOR.items():
-            p = self.precision(kind)
-            n = sum(1 for a in self.alerts
-                    if a.kind == kind and a.outcome in ("TRUE", "FALSE"))
-            if n < 5 or p is None:
+            t, f = self.graded_counts(kind)
+            n = t + f
+            if n < 5 or n == self._retuned_at[kind]:
                 continue
+            self._retuned_at[kind] = n
+            p = t / n
             if p < floor:
                 self.threshold_bump[kind] = min(35.0, self.threshold_bump[kind] + 6.0)
             elif p > floor + 0.20:
                 self.threshold_bump[kind] = max(0.0, self.threshold_bump[kind] - 3.0)
 
     # ------------------------------------------------------------------
+    def graded_counts(self, kind: str) -> Tuple[int, int]:
+        """(true, false) for one kind: this shift's alerts plus the carry-in."""
+        c = self.carried.get(kind, {"true": 0, "false": 0})
+        t = c["true"] + sum(1 for a in self.alerts
+                            if a.kind == kind and a.outcome == "TRUE")
+        f = c["false"] + sum(1 for a in self.alerts
+                             if a.kind == kind and a.outcome == "FALSE")
+        return t, f
+
+    def lifetime_precision(self, kind: str) -> Optional[float]:
+        """Precision over every shift this ledger has carried state through.
+        precision() stays this-shift-only, which is what the dashboard shows."""
+        t, f = self.graded_counts(kind)
+        return t / (t + f) if (t + f) else None
+
     def precision(self, kind: Optional[str] = None) -> Optional[float]:
         rows = [a for a in self.alerts
                 if a.outcome in ("TRUE", "FALSE") and (kind is None or a.kind == kind)]
@@ -194,6 +262,7 @@ class AlertLedger:
         for kind in (BOTTLENECK, DEFECT_RISK, DARK_STATION):
             rows = [a for a in self.alerts if a.kind == kind]
             graded = [a for a in rows if a.outcome in ("TRUE", "FALSE")]
+            lt, lf = self.graded_counts(kind)
             out[kind] = {
                 "fired": len(rows),
                 "graded": len(graded),
@@ -202,6 +271,12 @@ class AlertLedger:
                 "precision": self.precision(kind),
                 "mean_lead_s": self.mean_lead_time_s(kind),
                 "threshold_bump": self.threshold_bump[kind],
+                # lifetime = this shift plus carried-in history, the population
+                # the retune loop actually acts on
+                "lifetime_true": lt,
+                "lifetime_false": lf,
+                "lifetime_precision": self.lifetime_precision(kind),
+                "fire_floor": self.fire_floor(kind),
             }
         out["precision_all"] = self.precision()
         return out
