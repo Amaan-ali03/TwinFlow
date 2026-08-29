@@ -249,6 +249,10 @@ body {
   padding: 10px;
   border-left: none;
 }
+.sidebar.is-collapsed .sidebar-link.is-active {
+  background: rgba(245, 158, 11, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
 
 .sidebar-collapse {
   display: flex;
@@ -588,6 +592,16 @@ input[type="range"]::-webkit-slider-thumb {
 .kpi-hero .kpi-val {
   color: var(--andon-amber);
   font-size: 28px;
+}
+
+/* bare .kpi figures inside a panel grid read as tiles, not loose text */
+.grid .kpi {
+  background: var(--panel-2);
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+}
+.grid .kpi h2 {
+  margin-bottom: 6px;
 }
 
 /* ---------- line map ---------- */
@@ -1002,9 +1016,15 @@ input[type="range"]::-webkit-slider-thumb {
 
 .belief-row {
   display: grid;
-  grid-template-columns: 180px 1fr 90px;
+  grid-template-columns: 190px 1fr 120px;
   align-items: center;
   gap: 10px;
+}
+@media (max-width: 720px) {
+  .belief-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 .belief-label {
@@ -1471,6 +1491,13 @@ input[type="range"]::-webkit-slider-thumb {
 .table-scroll {
   overflow-x: auto;
 }
+/* any datatable dropped straight into a card or drawer stays scrollable
+   rather than forcing the page wider on a narrow viewport */
+.card > .datatable,
+.drawer-section > .datatable {
+  display: block;
+  overflow-x: auto;
+}
 
 /* mini inline bar for share / load columns */
 .minibar {
@@ -1835,4 +1862,19 @@ input[type="range"]::-webkit-slider-thumb {
   .kpi-tile-value { font-size: 24px; }
   .constraint-sid { font-size: 26px; }
   .h2-note { display: none; }
+  .card { padding: 16px 14px; }
+  .card h2 { flex-wrap: wrap; gap: 4px; }
+  .risktable td,
+  .risktable td:first-child {
+    display: block;
+    width: auto;
+  }
+  .risktable td:first-child {
+    padding-bottom: 2px;
+    border-bottom: none;
+  }
+  .zonemix-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
 }
