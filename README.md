@@ -1,6 +1,6 @@
 # TwinFlow — Predictive Digital Twin for a Mixed Model Assembly Line
 
-DigitalTwin.ai · Round 2 · Team Triumph (Amaan Ali, Pranjal Kole, Saatvik Pandey)
+DigitalTwin.ai · Round 2 · Team Triumph ( Saatvik Pandey, Amaan Ali, Pranjal Kole)
 
 TwinFlow watches a plant's existing data exhaust — MES barcode scans, PLC handshakes, process
 sensors where they exist, one or two retrofit webcams where they don't — and turns it into three
